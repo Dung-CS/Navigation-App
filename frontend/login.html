@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Authentication</title>
+        <style>
+            input {
+                margin: 5px;
+            }
+            label {
+                color: whitesmoke;
+            }
+
+            .auth {
+                background-color: #203153;
+                padding-top: 3px;
+                margin-top: 10px;
+                padding-left: 20px;
+                padding-bottom: 20px;
+                border-radius: 10px;;
+            }
+
+            h2 {
+                margin: 10px;
+                color: rgb(236, 244, 242);
+                background-color: #4b5b7c;
+                width: 20%;
+                text-align: center;
+                border-radius: 10px;
+            }
+
+            button {
+                margin-top: 10px;
+                background-color: #4b5b7c;
+                width: 10%;
+                border: solid rgb(155, 161, 160) 0.5px;
+                border-radius: 5px;
+                color:rgb(236, 244, 242); 
+            }
+        </style>
+    </head>
+    <body>
+        <form id="logForm" class = "auth login">
+        <h2>
+            Login
+        </h2>
+        <br>
+        <label for="email"> Email</label>
+        <input id="email" placeholder="abc@gmail.com" required>
+        <br>
+        <label for="password"> Password</label>
+        <input id="password" type="password" required>
+        <br>
+        <button onclick="login()" type="button">Login</button>
+        </div>
+    </body>
+    <script src="/index.js"></script>
+</html>
