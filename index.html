@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Waypoint</title>
+<style>
+  :root {
+    --bg: #0b0b0d;
+    --ink: #ffffff;
+    --ink-dim: rgba(255,255,255,0.45);
+    --ink-faint: rgba(255,255,255,0.22);
+    --card: rgba(255,255,255,0.06);
+    --line: rgba(255,255,255,0.12);
+    --accent: #4ade80;
+    --danger: #f87171;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  /* soft ambient glow like the Finding screen */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(60% 40% at 70% 18%, rgba(70,90,140,0.25), transparent 70%),
+      radial-gradient(50% 35% at 25% 80%, rgba(120,90,50,0.12), transparent 70%);
+    pointer-events: none;
+  }
+
+  .screen {
+    position: fixed; inset: 0;
+    display: none;
+    flex-direction: column;
+    padding: calc(env(safe-area-inset-top, 0px) + 24px) 24px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  }
+  .screen.active { display: flex; }
+
+  .eyebrow {
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+  }
+  h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; }
+
+  /* ---------- HOME ---------- */
+  #home .lede { color: var(--ink-dim); font-size: 16px; margin-top: 10px; line-height: 1.45; }
+
+  .field { margin-top: 28px; }
+  .field label { display: block; font-size: 13px; color: var(--ink-dim); margin-bottom: 8px; }
+  .field input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    color: var(--ink);
+    font-size: 17px;
+    padding: 14px 16px;
+    outline: none;
+  }
+  .field input:focus { border-color: rgba(255,255,255,0.35); }
+
+  .btn {
+    display: block; width: 100%;
+    border: none; border-radius: 16px;
+    font-size: 17px; font-weight: 600;
+    padding: 16px;
+    cursor: pointer;
+    color: #0b0b0d;
+    background: var(--ink);
+    margin-top: 14px;
+  }
+  .btn:disabled { opacity: 0.5; }
+  .btn.ghost {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .btn.find { background: var(--accent); }
+
+  .spot-card {
+    margin-top: 28px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 18px;
+  }
+  .spot-card .name { font-size: 19px; font-weight: 700; }
+  .spot-card .meta { color: var(--ink-dim); font-size: 13px; margin-top: 5px; line-height: 1.5; }
+  .spot-card .row { display: flex; gap: 10px; margin-top: 14px; }
+  .spot-card .row .btn { margin-top: 0; }
+
+  .status { margin-top: 16px; font-size: 13px; color: var(--ink-dim); line-height: 1.5; min-height: 20px; }
+  .status.error { color: var(--danger); }
+  .footnote { margin-top: auto; font-size: 12px; color: var(--ink-faint); line-height: 1.6; padding-top: 24px; }
+  .warn-banner {
+    background: rgba(248,113,113,0.12);
+    border: 1px solid rgba(248,113,113,0.4);
+    color: var(--danger);
+    font-size: 13px; line-height: 1.5;
+    border-radius: 12px; padding: 12px 14px; margin-top: 18px;
+    display: none;
+  }
+
+  /* ---------- FINDER ---------- */
+  #finder { text-align: left; }
+  #finder .head { flex: 0 0 auto; }
+
+  .stage {
+    flex: 1 1 auto;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  #arrowWrap {
+    width: min(58vw, 300px);
+    height: min(58vw, 300px);
+    will-change: transform;
+  }
+  #arrowWrap svg { width: 100%; height: 100%; display: block; }
+
+  #pulse {
+    display: none;
+    width: 140px; height: 140px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(74,222,128,0.5);
+    animation: pulse 1.6s ease-out infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(74,222,128,0.5); }
+    100% { box-shadow: 0 0 0 60px rgba(74,222,128,0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #pulse { animation: none; }
+  }
+
+  .readout { flex: 0 0 auto; padding-bottom: 8px; }
+  .readout .dist { font-size: 64px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; }
+  .readout .dist .unit { color: var(--ink-dim); font-weight: 500; }
+  .readout .dir { font-size: 52px; font-weight: 500; color: var(--ink-dim); letter-spacing: -0.02em; line-height: 1.1; }
+  .readout .dir b { color: var(--ink); font-weight: 600; }
+  .readout .fine { font-size: 13px; color: var(--ink-faint); margin-top: 10px; min-height: 18px; }
+
+  .controls {
+    flex: 0 0 auto;
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 18px;
+  }
+  .round {
+    width: 64px; height: 64px; border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.14);
+    color: var(--ink);
+    font-size: 24px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .round.on { background: var(--ink); color: #0b0b0d; }
+
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ============ HOME SCREEN ============ -->
+<div class="screen active" id="home">
+  <div>
+    <div class="eyebrow">Waypoint</div>
+    <h1>Save a spot.<br>Find your way back.</h1>
+    <p class="lede">Mark where you are now — your parked bike, a campsite, a meeting point. Later, an arrow points you back to it.</p>
+  </div>
+
+  <div class="warn-banner" id="httpsWarn">
+    This page isn't on HTTPS, so the browser blocks GPS and compass access. Deploy it (Vercel, Netlify, GitHub Pages) or tunnel with ngrok, then open the https:// link.
+  </div>
+
+  <div class="field">
+    <label for="spotName">Spot name</label>
+    <input id="spotName" type="text" placeholder="e.g. Parked bike" maxlength="40" autocomplete="off">
+  </div>
+
+  <button class="btn" id="saveBtn">Save this spot</button>
+
+  <div class="spot-card" id="spotCard" style="display:none">
+    <div class="name" id="cardName"></div>
+    <div class="meta" id="cardMeta"></div>
+    <div class="row">
+      <button class="btn find" id="findBtn">Find</button>
+      <button class="btn ghost" id="deleteBtn">Delete</button>
+    </div>
+  </div>
+
+  <div class="status" id="homeStatus"></div>
+
+  <p class="footnote">
+    Works outdoors with a clear view of the sky — GPS is accurate to roughly 3–15 m, so the arrow guides you close, then you look around. Indoors it will drift. Compass works best away from metal and magnets.
+  </p>
+</div>
+
+<!-- ============ FINDER SCREEN ============ -->
+<div class="screen" id="finder">
+  <div class="head">
+    <div class="eyebrow">Finding</div>
+    <h1 id="findingName">spot</h1>
+  </div>
+
+  <div class="stage">
+    <div id="arrowWrap">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M50 88 L50 24 M26 46 L50 22 L74 46"
+              stroke="#ffffff" stroke-width="13"
+              stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+    <div id="pulse"></div>
+  </div>
+
+  <div class="readout">
+    <div class="dist" id="distText">— <span class="unit"></span></div>
+    <div class="dir" id="dirText">locating…</div>
+    <div class="fine" id="fineText"></div>
+  </div>
+
+  <div class="controls">
+    <button class="round" id="closeBtn" aria-label="Stop finding">✕</button>
+    <button class="round" id="beepBtn" aria-label="Toggle sound">🔊</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+
+  /* ---------- storage: localStorage with in-memory fallback ---------- */
+  const store = {
+    mem: {},
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return this.mem[k] ?? null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { this.mem[k] = v; } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) { delete this.mem[k]; } }
+  };
+  const KEY = "waypoint.spot";
+
+  /* ---------- state ---------- */
+  let spot = null;            // { name, lat, lng, accuracy, ts }
+  let me = null;              // { lat, lng, accuracy }
+  let heading = null;         // degrees, 0 = north, clockwise
+  let haveCompass = false;
+  let watchId = null;
+  let saveWatchId = null;
+  let rafId = null;
+  let shownAngle = 0;         // smoothed arrow rotation actually rendered
+  let arrived = false;
+  let beepOn = false;
+  let beepTimer = null;
+  let audioCtx = null;
+  let wakeLock = null;
+  let lastDistance = null;
+
+  /* ---------- geo math ---------- */
+  const R = 6371000;
+  const toRad = d => d * Math.PI / 180;
+
+  function distanceM(a, b) {
+    const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
+    const x = Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  }
+
+  function bearingDeg(a, b) {
+    const dLng = toRad(b.lng - a.lng);
+    const y = Math.sin(dLng) * Math.cos(toRad(b.lat));
+    const x = Math.cos(toRad(a.lat)) * Math.sin(toRad(b.lat)) -
+              Math.sin(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.cos(dLng);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  }
+
+  /* ---------- home screen ---------- */
+  function setHomeStatus(msg, isError) {
+    const el = $("homeStatus");
+    el.textContent = msg || "";
+    el.classList.toggle("error", !!isError);
+  }
+
+  function renderSpotCard() {
+    const card = $("spotCard");
+    if (!spot) { card.style.display = "none"; return; }
+    card.style.display = "block";
+    $("cardName").textContent = spot.name;
+    const when = new Date(spot.ts).toLocaleString();
+    $("cardMeta").textContent =
+      `Saved ${when} · ±${Math.round(spot.accuracy)} m fix · ` +
+      `${spot.lat.toFixed(6)}, ${spot.lng.toFixed(6)}`;
+  }
+
+  function loadSpot() {
+    const raw = store.get(KEY);
+    if (raw) { try { spot = JSON.parse(raw); } catch (e) { spot = null; } }
+    renderSpotCard();
+  }
+
+  /* Save: watch for up to 6 s, keep the most accurate fix */
+  $("saveBtn").addEventListener("click", () => {
+    if (!("geolocation" in navigator)) {
+      setHomeStatus("This browser has no geolocation support.", true);
+      return;
+    }
+    const btn = $("saveBtn");
+    btn.disabled = true;
+    btn.textContent = "Getting GPS fix…";
+    setHomeStatus("Hold still for a few seconds — collecting the most accurate fix.");
+
+    let best = null;
+    let saveDone = false;
+    saveWatchId = navigator.geolocation.watchPosition(
+      pos => {
+        if (!best || pos.coords.accuracy < best.coords.accuracy) best = pos;
+        setHomeStatus(`Fix so far: ±${Math.round(best.coords.accuracy)} m`);
+      },
+      err => {
+        finishSave(null, err);
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+    );
+    setTimeout(() => finishSave(best, null), 6000);
+
+    function finishSave(best, err) {
+      if (saveDone) return;
+      saveDone = true;
+      if (saveWatchId !== null) {
+        navigator.geolocation.clearWatch(saveWatchId);
+        saveWatchId = null;
+      }
+      btn.disabled = false;
+      btn.textContent = "Save this spot";
+      if (err && !best) {
+        const msgs = {
+          1: "Location permission denied. Allow location access in your browser settings and try again.",
+          2: "Position unavailable. Step outside or near a window and retry.",
+          3: "GPS timed out. Move to open sky and retry."
+        };
+        setHomeStatus(msgs[err.code] || ("Location error: " + err.message), true);
+        return;
+      }
+      if (!best) {
+        setHomeStatus("No GPS fix received. Move outdoors and retry.", true);
+        return;
+      }
+      const name = $("spotName").value.trim() || "My spot";
+      spot = {
+        name,
+        lat: best.coords.latitude,
+        lng: best.coords.longitude,
+        accuracy: best.coords.accuracy,
+        ts: Date.now()
+      };
+      store.set(KEY, JSON.stringify(spot));
+      renderSpotCard();
+      setHomeStatus(`Saved “${name}” with a ±${Math.round(best.coords.accuracy)} m fix.`);
+    }
+  });
+
+  $("deleteBtn").addEventListener("click", () => {
+    spot = null;
+    store.del(KEY);
+    renderSpotCard();
+    setHomeStatus("Spot deleted.");
+  });
+
+  /* ---------- compass ---------- */
+  let compassTier = 0; // 0 = none, 1 = relative alpha, 2 = true compass
+  function onOrient(e) {
+    if (typeof e.webkitCompassHeading === "number" && !isNaN(e.webkitCompassHeading)) {
+      heading = e.webkitCompassHeading;           // iOS: already true compass heading
+      compassTier = 2; haveCompass = true;
+    } else if (e.absolute === true && typeof e.alpha === "number") {
+      heading = (360 - e.alpha) % 360;            // Android absolute orientation
+      compassTier = 2; haveCompass = true;
+    } else if (typeof e.alpha === "number" && compassTier <= 1) {
+      heading = (360 - e.alpha) % 360;            // last resort: relative alpha
+      compassTier = 1; haveCompass = true;
+    }
+  }
+
+  async function startCompass() {
+    // iOS 13+ requires an explicit permission request from a user gesture
+    if (typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function") {
+      try {
+        const state = await DeviceOrientationEvent.requestPermission();
+        if (state !== "granted") return false;
+      } catch (e) { return false; }
+    }
+    window.addEventListener("deviceorientationabsolute", onOrient, true);
+    window.addEventListener("deviceorientation", onOrient, true);
+    return true;
+  }
+
+  function stopCompass() {
+    window.removeEventListener("deviceorientationabsolute", onOrient, true);
+    window.removeEventListener("deviceorientation", onOrient, true);
+    heading = null;
+    haveCompass = false;
+    compassTier = 0;
+  }
+
+  /* ---------- finder ---------- */
+  $("findBtn").addEventListener("click", async () => {
+    if (!spot) return;
+    arrived = false;
+    lastDistance = null;
+    me = null;
+
+    $("findingName").textContent = spot.name;
+    $("distText").innerHTML = "— <span class='unit'></span>";
+    $("dirText").textContent = "locating…";
+    $("fineText").textContent = "";
+    $("pulse").style.display = "none";
+    $("arrowWrap").style.display = "block";
+
+    const compassOk = await startCompass();
+
+    watchId = navigator.geolocation.watchPosition(
+      pos => {
+        me = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy
+        };
+      },
+      err => {
+        $("dirText").textContent = "GPS error";
+        $("fineText").textContent = err.code === 1
+          ? "Location permission denied — allow it in browser settings."
+          : "No GPS signal. Move to open sky.";
+      },
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 }
+    );
+
+    // warn if no compass events arrive
+    setTimeout(() => {
+      if (!haveCompass && !arrived) {
+        $("fineText").textContent = compassOk
+          ? "No compass data — arrow shows direction relative to north (N = up)."
+          : "Compass permission denied — arrow shows direction relative to north (N = up).";
+      }
+    }, 3000);
+
+    try { wakeLock = await navigator.wakeLock?.request("screen"); } catch (e) { /* optional */ }
+
+    showScreen("finder");
+    loop();
+  });
+
+  function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    $(id).classList.add("active");
+  }
+
+  function fmtDistance(m) {
+    if (m >= 1000) return [(m / 1000).toFixed(2), "km"];
+    if (m >= 100) return [Math.round(m), "m"];
+    return [m.toFixed(0), "m"];
+  }
+
+  function dirWord(rel) {
+    // rel = clockwise angle from "straight ahead" to the target
+    if (rel >= 330 || rel < 30) return "ahead";
+    if (rel >= 30 && rel < 150) return "to your <b>right</b>";
+    if (rel >= 150 && rel < 210) return "<b>behind</b> you";
+    return "to your <b>left</b>";
+  }
+
+  function loop() {
+    rafId = requestAnimationFrame(loop);
+    if (!spot || !me) return;
+
+    const dist = distanceM(me, spot);
+    lastDistance = dist;
+    const brg = bearingDeg(me, spot);
+    const arriveRadius = Math.max(12, me.accuracy);
+
+    /* arrived state */
+    if (dist <= arriveRadius && !arrived) {
+      arrived = true;
+      $("arrowWrap").style.display = "none";
+      $("pulse").style.display = "block";
+      $("dirText").innerHTML = "<b>You’re here</b> — look around";
+      if (navigator.vibrate) navigator.vibrate([120, 80, 120]);
+    } else if (dist > arriveRadius * 1.6 && arrived) {
+      arrived = false;  // walked away again
+      $("pulse").style.display = "none";
+      $("arrowWrap").style.display = "block";
+    }
+
+    /* distance readout */
+    const [val, unit] = fmtDistance(dist);
+    $("distText").innerHTML = `${val} <span class="unit">${unit}</span>`;
+    $("fineText").textContent =
+      `GPS ±${Math.round(me.accuracy)} m` + (haveCompass ? "" : " · compass unavailable");
+
+    if (arrived) return;
+
+    /* arrow rotation, eased along the shortest path */
+    const h = haveCompass && heading !== null ? heading : 0;
+    const target = (brg - h + 360) % 360;
+    const diff = ((target - shownAngle + 540) % 360) - 180;
+    shownAngle = (shownAngle + diff * 0.15 + 360) % 360;
+    $("arrowWrap").style.transform = `rotate(${shownAngle}deg)`;
+
+    $("dirText").innerHTML = dirWord(target);
+  }
+
+  /* ---------- proximity beep ---------- */
+  function beepLoop() {
+    if (!beepOn) return;
+    if (audioCtx && lastDistance !== null) {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.frequency.value = arrived ? 1320 : 880;
+      g.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+      o.connect(g).connect(audioCtx.destination);
+      o.start();
+      o.stop(audioCtx.currentTime + 0.13);
+    }
+    // closer = faster: 2.5 s at 200 m+, down to 0.25 s when arrived
+    const d = lastDistance ?? 200;
+    const interval = arrived ? 250 : Math.min(2500, Math.max(350, d * 12));
+    beepTimer = setTimeout(beepLoop, interval);
+  }
+
+  $("beepBtn").addEventListener("click", () => {
+    beepOn = !beepOn;
+    $("beepBtn").classList.toggle("on", beepOn);
+    if (beepOn) {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      audioCtx?.resume?.();
+      beepLoop();
+    } else {
+      clearTimeout(beepTimer);
+    }
+  });
+
+  /* ---------- stop finding ---------- */
+  $("closeBtn").addEventListener("click", () => {
+    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+    clearTimeout(beepTimer);
+    beepOn = false;
+    $("beepBtn").classList.remove("on");
+    stopCompass();
+    try { wakeLock?.release?.(); } catch (e) {}
+    wakeLock = null;
+    showScreen("home");
+  });
+
+  /* ---------- boot ---------- */
+  if (!window.isSecureContext) $("httpsWarn").style.display = "block";
+  loadSpot();
+})();
+</script>
+</body>
+</html>
