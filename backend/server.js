@@ -6,7 +6,9 @@ const cors = require('cors');
 const authRouter = require('./route/auth');
 const path = require('path');
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000']
+}));
 app.use(express.json());
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
