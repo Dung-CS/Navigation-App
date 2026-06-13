@@ -285,7 +285,7 @@ async function checkSession() {
   }
 
   try {
-    const response = await fetch("http://localhost:3000/auth/username", {
+    const response = await fetch("http://127.0.0.1:3000/auth/username", {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token}`
