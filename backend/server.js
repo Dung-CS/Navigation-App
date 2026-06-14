@@ -2,18 +2,19 @@ require('dotenv').config();
 
 const express = require('express');
 const app = express();
-const cors = require('cors');
 const authRouter = require('./route/auth');
 const path = require('path');
+const bodyParser = require('body-parser');
+const locationRouter = require('./route/location');
 
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000']
-}));
+app.use(bodyParser.json());
+
 app.use(express.json());
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 app.use('/auth', authRouter);
+app.use('/location', locationRouter);
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.listen(3000, () => {
