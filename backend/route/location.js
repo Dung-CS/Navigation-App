@@ -21,6 +21,20 @@ async function getUserId() {
 }
 
 
+router.put('/:id', async (req,res) => {
+  const {id} = req.params;
+  const {is_public, category, shared_with} = req.body;
+  
+  const {data, error} = await supabase
+  .from('locations')
+  .update({is_public,category,shared_with})
+  .eq("id", id)
+  .select();
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ message: "Location updated", data });
+});
+
 router.post('/', async (req, res) => {
   const { name, lat, lng } = req.body
   const authHeader = req.headers['authorization']
