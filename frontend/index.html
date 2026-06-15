@@ -42,6 +42,7 @@
     display: none;
     flex-direction: column;
     padding: calc(env(safe-area-inset-top, 0px) + 24px) 24px calc(env(safe-area-inset-bottom, 0px) + 24px);
+    overflow: hidden;
   }
   .screen.active { display: flex; }
 
@@ -167,6 +168,98 @@
   .round.on { background: var(--ink); color: #0b0b0d; }
 
   button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .auth a {
+    text-decoration: none;
+    color: black;
+    
+  }
+  .auth button {
+    display: inline-block;
+    background-color: white;
+    border: none;
+    width: 60px;
+    border-radius: 5px;
+    margin-right: 10px;
+  }
+  .auth {
+    text-align: right;
+  }
+  #welcomeSection button {
+    display: inline-block;
+    background-color: white;
+    border: none;
+    width: 60px;
+    border-radius: 5px;
+    margin-right: 10px;
+    color: black;
+  }
+  #welcomeSection {
+    text-align: right;
+  }
+
+  .auth button:hover {
+    cursor: pointer;
+    background-color: rgb(113,111,111);
+  }
+  #loadLocation{
+    margin: 10px;
+    display: block;
+    background-color: white;
+    border: none;
+    width: 180px;
+    border-radius: 5px;
+    margin-right: 10px;
+    color: black;
+  }
+
+  #locationPortal {
+    margin-top: 20px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+  }
+
+  #locationPortal::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  #locationPortal::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #locationPortal::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+  }
+
+  #locationPortal::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .spot-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .spot-card.saved-location {
+    margin-top: 0;
+  }
+
+  .spot-card .coordinates {
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 12px;
+  }
+
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24
+}
 </style>
 </head>
 <body>
@@ -174,6 +267,15 @@
 <!-- ============ HOME SCREEN ============ -->
 <div class="screen active" id="home">
   <div>
+    <div class="auth" id="auth">
+      <button><a href="/auth/register">register</a></button> 
+      <button><a href="/auth/login">login</a></button> 
+    </div>
+    <div id="welcomeSection" style="display:none;">
+      <h2>Welcome back!</h2>
+      <p id="welcomMessage">You are signed in.</p>
+      <button onclick="logout()" type="button">Logout</button>
+    </div>
     <div class="eyebrow">Waypoint</div>
     <h1>Save a spot.<br>Find your way back.</h1>
     <p class="lede">Mark where you are now — your parked bike, a campsite, a meeting point. Later, an arrow points you back to it.</p>
@@ -185,10 +287,10 @@
 
   <div class="field">
     <label for="spotName">Spot name</label>
-    <input id="spotName" type="text" placeholder="e.g. Parked bike" maxlength="40" autocomplete="off">
+    <input id="spotName" type="text" placeholder="e.g. Parked bike" maxlength="40" autocomplete="off" required>
   </div>
 
-  <button class="btn" id="saveBtn">Save this spot</button>
+  <button class="btn" id="saveBtn" onclick="saveLocation()" type = "button">Save this spot</button>
 
   <div class="spot-card" id="spotCard" style="display:none">
     <div class="name" id="cardName"></div>
@@ -204,7 +306,14 @@
   <p class="footnote">
     Works outdoors with a clear view of the sky — GPS is accurate to roughly 3–15 m, so the arrow guides you close, then you look around. Indoors it will drift. Compass works best away from metal and magnets.
   </p>
+  <button id ="loadLocation" type="button" onclick="loadLocations()"> <span class="material-symbols-outlined">
+</span>Saved Location</button>
+  <div id="locationPortal">
+    Click the button above to see saved locations.
+  </div>
 </div>
+
+
 
 <!-- ============ FINDER SCREEN ============ -->
 <div class="screen" id="finder">
@@ -236,7 +345,54 @@
   </div>
 </div>
 
+<script src="/index.js"></script>
 <script>
+async function checkSession() {
+  const token = localStorage.getItem("access-token");
+  if (!token) {
+    console.log("No token found");
+    document.getElementById("auth").style.display = "block";
+    document.getElementById("welcomeSection").style.display = "none";
+    return false;
+  }
+
+  try {
+    const response = await fetch("http://127.0.0.1:3000/auth/username", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (response.ok) {
+      const result = await response.json(); // parse JSON
+      console.log("Session is alive:", result);
+
+      document.getElementById("auth").style.display = "none";
+      document.getElementById("welcomeSection").style.display = "block";
+
+      if (result.username) {
+        document.getElementById("welcomMessage").innerText = `Hello, ${result.username}`;
+      }
+      return true;
+    } else {
+      console.log("Session expired");
+      localStorage.removeItem("access-token");
+      document.getElementById("auth").style.display = "block";
+      document.getElementById("welcomeSection").style.display = "none";
+      return false;
+    }
+  } catch (err) {
+    console.error("Error checking session:", err);
+    return false;
+  }
+}
+
+// Run session check when page loads
+window.addEventListener("DOMContentLoaded", () => {
+  checkSession();
+});
+
 (() => {
   "use strict";
 
@@ -336,7 +492,9 @@
     setTimeout(() => finishSave(best, null), 6000);
 
     function finishSave(best, err) {
-      if (saveDone) return;
+      if (saveDone) {
+        return;
+      };
       saveDone = true;
       if (saveWatchId !== null) {
         navigator.geolocation.clearWatch(saveWatchId);
@@ -415,9 +573,11 @@
     compassTier = 0;
   }
 
-  /* ---------- finder ---------- */
-  $("findBtn").addEventListener("click", async () => {
-    if (!spot) return;
+  /* ---------- start finder (for both home spot and saved locations) ---------- */
+  async function startFinder(targetSpot) {
+    if (!targetSpot) return;
+    
+    spot = targetSpot; // use the target location
     arrived = false;
     lastDistance = null;
     me = null;
@@ -461,6 +621,15 @@
 
     showScreen("finder");
     loop();
+  }
+
+  // Export for use from index.js
+  window.startFinderForLocation = startFinder;
+
+  /* ---------- finder button handler ---------- */
+  $("findBtn").addEventListener("click", () => {
+    if (!spot) return;
+    startFinder(spot);
   });
 
   function showScreen(id) {
