@@ -25,3 +25,11 @@ create table friends (
   status text check (status in ('pending','accepted','blocked')) default 'pending',
   created_at timestamp default now()
 );
+
+create table location_shares (
+  id uuid primary key default gen_random_uuid(),
+  location_id uuid references locations(id) on delete cascade,
+  shared_by uuid references profiles(id) on delete cascade,
+  shared_with uuid references profiles(id) on delete cascade,
+  created_at timestamp default now()
+);

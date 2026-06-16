@@ -24,33 +24,15 @@ router.get('/:id', async (req, res) => {
   const userId = req.params.id;
 
   // Friends where current user is the recipient
-  const { data: incoming, error: error1 } = await supabase
-    .from('friends')
-    .select('id, user_id')
-    .eq('friend_id', userId)
-    .eq('status', 'accepted');
+  const { data, error } = await supabase
+  .from('friends')
+  .select('id, user_id, friend_id')
+  .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
+  .eq('status', 'accepted');
 
-  if (error1) {
-    console.error(error1);
-    return res.status(400).json({ error: 'Error fetching incoming friends' });
-  }
+  if (error) return res.status(400).json({ error: error.message });
 
-  // Friends where current user is the sender
-  const { data: outgoing, error: error2 } = await supabase
-    .from('friends')
-    .select('id, friend_id')
-    .eq('user_id', userId)
-    .eq('status', 'accepted');
-
-  if (error2) {
-    console.error(error2);
-    return res.status(400).json({ error: 'Error fetching outgoing friends' });
-  }
-
-  // Merge both arrays
-  const allFriends = [...incoming, ...outgoing];
-
-  return res.json(allFriends);
+  return res.json(data);
 });
 
 
