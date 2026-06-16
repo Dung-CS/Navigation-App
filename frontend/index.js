@@ -1,3 +1,5 @@
+import { supabase } from './supabaseClient.js';
+
 async function loadLocations() {
   const token = localStorage.getItem("access-token")
   if (!token) {
@@ -281,3 +283,32 @@ async function register() {
     alert("Registration failed or no session returned");
   }
 }
+
+async function testSupabaseConnection() {
+  try {
+    const { data, error } = await supabase
+      .from('attraction_cards')
+      .select('*');
+
+    if (error) {
+      console.error('Supabase connection failed:', error);
+      return;
+    }
+
+    console.log('Supabase connected. Attractions loaded:', data);
+  } catch (err) {
+    console.error('Supabase connection failed:', err);
+  }
+}
+
+testSupabaseConnection();
+
+window.loadLocations = loadLocations;
+window.togglePrivacy = togglePrivacy;
+window.updateCategory = updateCategory;
+window.findLocation = findLocation;
+window.deleteLocation = deleteLocation;
+window.saveLocation = saveLocation;
+window.logout = logout;
+window.login = login;
+window.register = register;
