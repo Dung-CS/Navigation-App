@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Friends</title>
+<style>
+    :root {
+    --bg: #0b0b0d;
+    --ink: #ffffff;
+    --ink-dim: rgba(255,255,255,0.45);
+    --ink-faint: rgba(255,255,255,0.22);
+    --card: rgba(255,255,255,0.06);
+    --line: rgba(255,255,255,0.12);
+    --accent: #4ade80;
+    --danger: #f87171;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  /* soft ambient glow like the Finding screen */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(60% 40% at 70% 18%, rgba(70,90,140,0.25), transparent 70%),
+      radial-gradient(50% 35% at 25% 80%, rgba(120,90,50,0.12), transparent 70%);
+    pointer-events: none;
+  }
+
+  .btn {
+    display: block; width: 100%;
+    border: none; border-radius: 16px;
+    font-size: 17px; font-weight: 600;
+    padding: 16px;
+    cursor: pointer;
+    color: #0b0b0d;
+    background: var(--ink);
+    margin-top: 14px;
+  }
+  .btn:disabled { opacity: 0.5; }
+  .btn.ghost {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .btn.find { background: var(--accent); }
+
+  .spot-card {
+    margin-top: 28px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 18px;
+  }
+  .spot-card .name { font-size: 19px; font-weight: 700; }
+  .spot-card .meta { color: var(--ink-dim); font-size: 13px; margin-top: 5px; line-height: 1.5; }
+  .spot-card .row { display: flex; gap: 10px; margin-top: 14px; }
+  .spot-card .row .btn { margin-top: 0; }
+
+  .spot-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .spot-card.saved-location {
+    margin-top: 0;
+  }
+
+  .share-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 24px;
+    z-index: 1000;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    max-width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .share-modal h3 {
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .share-modal .friend-list {
+    list-style: none;
+    margin-bottom: 16px;
+  }
+
+  .share-modal .friend-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .share-modal .friend-list li:last-child {
+    border-bottom: none;
+  }
+
+  .share-modal .friend-list .btn {
+    margin-top: 0;
+    width: auto;
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+</style>
+</head>
+
+<body>
+    <h1>Shared locations</h1>
+    <p>Below are locations shared by your friends</p>
+    <div id="locationPortal"></div>
+
+</body>
+<script>
+    window.addEventListener("DOMContentLoaded", () => {
+        LoadLocations();
+    });
+
+    async function LoadLocations(){
+        const token = localStorage.getItem('access-token');
+        const meRes = await fetch ('http://127.0.0.1:3000/auth/me', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'authorization': `Bearer ${token}`
+            }
+        });
+        const meData = await meRes.json();
+        const userId = meData.userId;
+
+    try{
+        const res = await fetch(`http://127.0.0.1:3000/location/share/${userId}`, {
+  method: 'GET',
+  headers: { 'Content-Type': 'application/json' }
+});
+
+// Parse JSON
+const locations = await res.json();
+
+const container = document.querySelector('#locationPortal');
+container.innerHTML = ''; // clear old list
+
+const cardsContainer = document.createElement('div');
+cardsContainer.className = 'spot-cards-container';
+
+if (!locations || locations.length === 0) {
+      container.innerHTML = '<p style="color: var(--ink-dim); font-size: 14px;">No saved locations yet. Save your first spot!</p>'
+      return
+    }
+// Loop through each location object
+for (const loc of locations) {
+  const dateStr = new Date(loc.created_at).toLocaleString() || "Date unknown";
+
+  const card = document.createElement("div");
+  card.className = "spot-card saved-location";
+
+  card.innerHTML = `
+    <div class="name">${loc.name}</div>
+    <div class="meta">
+      <div>Saved ${dateStr}</div>
+      <div class="coordinates">${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}</div>
+    </div>
+    <div class="row">
+      <button class="btn find" onclick="findLocation(${loc.lat}, ${loc.lng}, '${loc.name}')">Find</button>
+    </div>
+  `;
+
+  cardsContainer.appendChild(card);
+}
+
+container.appendChild(cardsContainer);
+
+  } catch (err) {
+    console.error("Error loading locations:", err)
+    const container = document.querySelector('#locationPortal')
+    container.innerHTML = '<p style="color: var(--danger); font-size: 14px;">Failed to load saved locations</p>'
+  }
+    }
+</script>
+<script src="/index.js"></script>
+</html>

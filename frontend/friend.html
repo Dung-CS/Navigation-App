@@ -60,7 +60,6 @@
   }
 
   .btn {
-    display: block; 
     flex: 1;
     border: none; border-radius: 16px;
     font-size: 17px; font-weight: 600;
@@ -69,6 +68,7 @@
     color: #0b0b0d;
     background: var(--ink);
     margin-top: 14px;
+    margin-right: 20px;
   }
 
   .btn.reject {
@@ -103,6 +103,7 @@
 
   .butt{
     display: inline-block;
+
     width: 40%;
   }
 
@@ -300,7 +301,8 @@ async function searchFriend() {
         card.className = 'card';
 
         // Fetch the friend's username
-        const nameRes = await fetch(`http://127.0.0.1:3000/auth/${friend.user_id || friend.friend_id}`, {
+        const searchId = friend.user_id === userId ? friend.friend_id : friend.user_id;
+        const nameRes = await fetch(`http://127.0.0.1:3000/auth/${searchId}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         });

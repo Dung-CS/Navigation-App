@@ -50,6 +50,10 @@ async function loadLocations() {
           <option value="entertain">Entertain</option>
           <option value="other">Other</option>
         </select>
+        <button class="btn share" onclick="openShareMenu('${loc.id}')">
+        <span class="icon">🔗</span> Share
+        </button>
+
       </div>
       `;
 
@@ -64,6 +68,90 @@ async function loadLocations() {
     container.innerHTML = '<p style="color: var(--danger); font-size: 14px;">Failed to load saved locations</p>'
   }
 }
+
+async function openShareMenu(locationId) {
+  const token = localStorage.getItem("access-token");
+  if (!token) {
+    alert("Sign in to share locations!");
+    return;
+  }
+
+  // Fetch accepted friends
+  const meRes = await fetch("http://127.0.0.1:3000/auth/me", {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  const meData = await meRes.json();
+  const userId = meData.userId;
+
+  const res = await fetch(`http://127.0.0.1:3000/friend/${userId}`, {
+    headers: { "Content-Type": "application/json" }
+  });
+  const friends = await res.json();
+
+  // Create a simple popup list
+  const modal = document.createElement("div");
+  modal.className = "share-modal";
+  modal.innerHTML = `
+    <h3>Share Location</h3>
+    <ul class="friend-list"></ul>
+    <button class="btn ghost" onclick="closeShareMenu()">Cancel</button>
+  `;
+
+  const list = modal.querySelector(".friend-list");
+  if (friends && friends.length > 0) {
+    for (const friend of friends) { 
+      const li = document.createElement("li");
+      const searchId = friend.user_id === userId ? friend.friend_id : friend.user_id;
+      try {
+        const nameRes = await fetch(`http://127.0.0.1:3000/auth/${searchId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        const nameData = await nameRes.json();
+        li.innerHTML = `
+          <span>${nameData.username}</span>
+          <button class="btn" onclick="shareLocation('${locationId}', '${searchId}')">Share</button>
+        `;
+        list.appendChild(li);
+      } catch (err) {
+        console.error('Error loading friend:', err);
+      }
+    }
+  } else {
+    const li = document.createElement("li");
+    li.textContent = "No accepted friends yet";
+    list.appendChild(li);
+  }
+
+  document.body.appendChild(modal);
+}
+
+function closeShareMenu() {
+  document.querySelector(".share-modal").remove();
+}
+
+async function shareLocation(locationId, friendId) {
+  const token = localStorage.getItem("access-token");
+  const res = await fetch("http://127.0.0.1:3000/location/share", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ locationId, friendId })
+  });
+
+  const result = await res.json();
+  if (res.ok) {
+    alert("Location shared successfully!");
+    closeShareMenu();
+  } else {
+    alert(result.error || "Failed to share location");
+  }
+}
+
 
 async function togglePrivacy(locationId, currentStatus) {
   const token = localStorage.getItem("access-token");
