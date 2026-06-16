@@ -24,30 +24,83 @@ async function loadLocations() {
     cardsContainer.className = 'spot-cards-container'
 
     locations.forEach(loc => {
-      const card = document.createElement('div')
-      card.className = 'spot-card saved-location'
-      
-      const dateStr = new Date(loc.created_at).toLocaleString() || 'Date unknown'
-      
+      const card = document.createElement("div");
+      card.className = "spot-card saved-location";
+
+      const dateStr = new Date(loc.created_at).toLocaleString() || "Date unknown";
+
       card.innerHTML = `
-        <div class="name">${loc.name}</div>
-        <div class="meta">
-          <div>Saved ${dateStr}</div>
-          <div class="coordinates">${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}</div>
-        </div>
-        <div class="row">
-          <button class="btn find" onclick="findLocation(${loc.lat}, ${loc.lng}, '${loc.name}')">Find</button>
-          <button class="btn ghost" onclick="deleteLocation('${loc.id}')">Delete</button>
-        </div>
-      `
-      cardsContainer.appendChild(card)
-    })
+      <div class="name">${loc.name}</div>
+      <div class="meta">
+        <div>Saved ${dateStr}</div>
+        <div class="coordinates">${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}</div>
+        <div class="privacy">Privacy: ${loc.is_public ? "Public" : "Private"}</div>
+        <div class="category">Category: ${loc.category || "Uncategorized"}</div>
+      </div>
+      <div class="row">
+        <button class="btn find" onclick="findLocation(${loc.lat}, ${loc.lng}, '${loc.name}')">Find</button>
+        <button class="btn ghost" onclick="deleteLocation('${loc.id}')">Delete</button>
+        <button class="btn ghost" onclick="togglePrivacy('${loc.id}', ${loc.is_public})">
+          ${loc.is_public ? "Make Private" : "Make Public"}
+        </button>
+        <select id ="category" onchange="updateCategory('${loc.id}', this.value)">
+          <option value="">Set Category</option>
+          <option value="food">Food</option>
+          <option value="drink">Drink</option>
+          <option value="entertain">Entertain</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      `;
+
+      cardsContainer.appendChild(card);
+    });
+
 
     container.appendChild(cardsContainer)
   } catch (err) {
     console.error("Error loading locations:", err)
     const container = document.querySelector('#locationPortal')
     container.innerHTML = '<p style="color: var(--danger); font-size: 14px;">Failed to load saved locations</p>'
+  }
+}
+
+async function togglePrivacy(locationId, currentStatus) {
+  const token = localStorage.getItem("access-token");
+  const res = await fetch(`http://127.0.0.1:3000/location/${locationId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({is_public: !currentStatus})
+  });
+  const result = await res.json();
+  if (res.ok) {
+    alert(`Location is now ${!currentStatus ? "Public" : "Private"}`);
+    loadLocations();
+  } else {
+    alert(result.error);
+  }
+}
+
+async function updateCategory(locationId, newCategory) {
+  const token = localStorage.getItem("access-token");
+  const res = await fetch(`http://127.0.0.1:3000/location/${locationId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify({ category: newCategory })
+  });
+
+  const result = await res.json();
+  if (res.ok) {
+    alert("Category updated");
+    loadLocations();
+  } else {
+    alert(result.error);
   }
 }
 

@@ -12,3 +12,16 @@ create table locations (
   lng double precision,
   created_at timestamp default now()
 );
+
+alter table locations
+add column is_public boolean default false, -- default private
+add column category text check (category in ('food','drink','entertain','other')),
+add column shared_with uuid[] default '{}'; -- default empty array
+
+create table friends (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id) on delete cascade,
+  friend_id uuid references profiles(id) on delete cascade,
+  status text check (status in ('pending','accepted','blocked')) default 'pending',
+  created_at timestamp default now()
+);

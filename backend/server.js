@@ -6,6 +6,7 @@ const authRouter = require('./route/auth');
 const path = require('path');
 const bodyParser = require('body-parser');
 const locationRouter = require('./route/location');
+const friendRouter = require('./route/friend')
 
 app.use(bodyParser.json());
 
@@ -15,6 +16,7 @@ app.get('/', (req, res) => {
 });
 app.use('/auth', authRouter);
 app.use('/location', locationRouter);
+app.use('/friend', friendRouter);
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.listen(3000, () => {
