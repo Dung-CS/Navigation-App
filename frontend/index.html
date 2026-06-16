@@ -267,6 +267,25 @@
     border: solid black 0.5px;
     background-color: white;
   }
+
+  .friend button{
+    color: black;
+    border: solid black 0.5px;
+    background-color: white;
+    padding: 5px;
+    font-weight: 600;
+    margin: 20px;
+    margin-left: 0;
+    border-radius: 7px;
+  }
+
+  .friend a{
+    text-decoration: none;
+    color: black;
+  }
+  .friend {
+    text-align: left;
+  }
 </style>
 </head>
 <body>
@@ -282,6 +301,9 @@
       <h2>Welcome back!</h2>
       <p id="welcomMessage">You are signed in.</p>
       <button onclick="logout()" type="button">Logout</button>
+    </div>
+    <div class="friend">
+      <button type="button"><a href='/friend'>Friends</a></button>
     </div>
     <div class="eyebrow">Waypoint</div>
     <h1>Save a spot.<br>Find your way back.</h1>

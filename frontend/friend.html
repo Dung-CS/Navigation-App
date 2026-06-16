@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Friends</title>
+<style>
+    :root {
+    --bg: #0b0b0d;
+    --ink: #ffffff;
+    --ink-dim: rgba(255,255,255,0.45);
+    --ink-faint: rgba(255,255,255,0.22);
+    --card: rgba(255,255,255,0.06);
+    --line: rgba(255,255,255,0.12);
+    --accent: #4ade80;
+    --danger: #f87171;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  /* soft ambient glow like the Finding screen */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(60% 40% at 70% 18%, rgba(70,90,140,0.25), transparent 70%),
+      radial-gradient(50% 35% at 25% 80%, rgba(120,90,50,0.12), transparent 70%);
+    pointer-events: none;
+  }
+  .name {
+    font-weight: 600;
+    font-size: 20px;
+    color: white;
+    background-color: rgba(255,255,255,0.45);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .butt {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn {
+    display: block; 
+    flex: 1;
+    border: none; border-radius: 16px;
+    font-size: 17px; font-weight: 600;
+    padding: 16px;
+    cursor: pointer;
+    color: #0b0b0d;
+    background: var(--ink);
+    margin-top: 14px;
+  }
+
+  .btn.reject {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .btn.accept { background: var(--accent); }
+  .btn.remove { background: var(--danger); }
+
+  form .btn {
+    width: 15%;
+    height: 30px;
+    padding: 10px;
+  }
+
+  #pending, #friendsSection {
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+
+  h3, h4 {
+    margin: 15px 0 10px 0;
+  }
+  
+  .name {
+    width: 40%;
+    text-align: center;
+    display: inline-block;
+    margin-right: 20px;
+  }
+
+  .butt{
+    display: inline-block;
+    width: 40%;
+  }
+
+  h1 {
+    font-size: 70px;
+    text-align: center;
+  }
+
+  input{
+    margin: 10px;
+    background-color: grey;
+    border-radius: 7px;
+    width: 200px;
+    height: 30px;
+    border: none;
+  }
+
+  hr{
+    margin-bottom: 10px;
+    margin-top: 5px;
+    color: grey;
+  }
+</style>
+</head>
+<body>
+    <h1>Friends</h1>
+    <p>Look up using username to make friends!!!</p>
+    <form id="friend">
+  <input type="text" id="friendName" required> <button class="btn search" type="submit">Search</button>
+</form>
+
+
+    <div id="pending">
+        <h2>Pending Friend Requests</h2>
+        <hr>
+    </div>
+
+    <div id="friendsSection">
+        <h2>Your Friends</h2>
+            <hr>
+    </div>
+    
+
+</body>
+<script>
+    // Attach a submit listener to the form
+document.getElementById("friend").addEventListener("submit", async (e) => {
+  e.preventDefault(); // prevent page reload
+  await searchFriend(); // call your function
+
+});
+
+async function searchFriend() {
+  const username = document.getElementById("friendName").value;
+  const token = localStorage.getItem("access-token");
+
+  if (!token) {
+    alert("Sign in to connect with others");
+    return;
+  }
+
+  const res = await fetch("http://127.0.0.1:3000/friend/request", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify({ username })
+  });
+
+  const result = await res.json();
+  if (res.ok) {
+    alert("Friend Request sent!!!");
+    document.getElementById("friendName").value = ""; // Clear the input
+  } else {
+    alert(result.error);
+  }
+}
+
+
+    async function LoadFriends(){
+        const token = localStorage.getItem('access-token');
+        if (!token) {
+            alert('Sign in to connect with others')
+            return console.log("No token found")
+        }
+        await loadPending(token);
+        await loadAccept(token);
+    }
+
+    async function loadPending(token) {
+  try {
+    // Step 1: Get current user info
+    const meRes = await fetch('http://127.0.0.1:3000/auth/me', {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const meData = await meRes.json();
+    const userId = meData.userId; // actual UUID
+
+    // Step 2: Get pending friend requests
+    const res = await fetch(`http://127.0.0.1:3000/friend/pending/${userId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const pendingList = await res.json();
+
+    const container = document.querySelector('#pending');
+    
+    // Clear only the requests, keep the heading
+    const requestsContainer = container.querySelector('.pending-requests') || document.createElement('div');
+    requestsContainer.className = 'pending-requests';
+    requestsContainer.innerHTML = '';
+
+    if (!pendingList || pendingList.length === 0) {
+      const status = document.createElement('p');
+      status.innerText = 'No pending friend requests.';
+      requestsContainer.appendChild(status);
+    } else {
+      // Step 3: Render each pending request
+      for (const friend of pendingList) {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        // Fetch the friend's username
+        const nameRes = await fetch(`http://127.0.0.1:3000/auth/${friend.user_id}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const nameData = await nameRes.json();
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'name';
+        nameDiv.innerText = nameData.username;
+
+        const buttDiv = document.createElement('div');
+        buttDiv.className = 'butt';
+        buttDiv.innerHTML = `
+          <button class="btn accept" onclick="acceptFriend('${friend.id}')">Accept</button>
+          <button class="btn reject" onclick="rejectFriend('${friend.id}')">Reject</button>
+        `;
+
+        card.appendChild(nameDiv);
+        card.appendChild(buttDiv);
+        requestsContainer.appendChild(card);
+      }
+    }
+
+    if (!container.querySelector('.pending-requests')) {
+      container.appendChild(requestsContainer);
+    }
+  } catch (error) {
+    console.error('Error loading pending requests:', error);
+    const container = document.querySelector('#pending');
+    const requestsContainer = container.querySelector('.pending-requests') || document.createElement('div');
+    requestsContainer.className = 'pending-requests';
+    requestsContainer.innerHTML = '<p style="color: var(--danger);">Error loading pending requests</p>';
+    if (!container.querySelector('.pending-requests')) {
+      container.appendChild(requestsContainer);
+    }
+  }
+}
+
+
+    async function loadAccept(token) {
+  try {
+    // Step 1: Get current user info
+    const meRes = await fetch('http://127.0.0.1:3000/auth/me', {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const meData = await meRes.json();
+    const userId = meData.userId; // UUID of logged-in user
+
+    // Step 2: Get accepted friends
+    const res = await fetch(`http://127.0.0.1:3000/friend/${userId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const acceptedList = await res.json();
+
+    const friendsSection = document.querySelector('#friendsSection');
+    const acceptedContainer = friendsSection.querySelector('.accepted-friends') || document.createElement('div');
+    acceptedContainer.className = 'accepted-friends';
+    acceptedContainer.innerHTML = '';
+
+    if (!acceptedList || acceptedList.length === 0) {
+      const status = document.createElement('p');
+      status.innerText = 'No accepted friends yet.';
+      acceptedContainer.appendChild(status);
+    } else {
+      // Step 3: Render each accepted friend
+      for (const friend of acceptedList) {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        // Fetch the friend's username
+        const nameRes = await fetch(`http://127.0.0.1:3000/auth/${friend.user_id || friend.friend_id}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const nameData = await nameRes.json();
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'name';
+        nameDiv.innerText = nameData.username;
+
+        const buttDiv = document.createElement('div');
+        buttDiv.className = 'butt';
+        buttDiv.innerHTML = `
+          <button class="btn remove" onclick="removeFriend('${friend.id}')">Remove</button>
+        `;
+
+        card.appendChild(nameDiv);
+        card.appendChild(buttDiv);
+        acceptedContainer.appendChild(card);
+      }
+    }
+
+    if (!friendsSection.querySelector('.accepted-friends')) {
+      friendsSection.appendChild(acceptedContainer);
+    }
+  } catch (error) {
+    console.error('Error loading accepted friends:', error);
+    const friendsSection = document.querySelector('#friendsSection');
+    const acceptedContainer = friendsSection.querySelector('.accepted-friends') || document.createElement('div');
+    acceptedContainer.className = 'accepted-friends';
+    acceptedContainer.innerHTML = '<p style="color: var(--danger);">Error loading friends</p>';
+    if (!friendsSection.querySelector('.accepted-friends')) {
+      friendsSection.appendChild(acceptedContainer);
+    }
+  }
+}
+
+
+    window.addEventListener("DOMContentLoaded", () => {
+        LoadFriends();
+    });
+
+    async function acceptFriend(requestId) {
+      const token = localStorage.getItem('access-token');
+      if (!token) {
+        alert('Sign in to perform this action');
+        return;
+      }
+
+      const res = await fetch('http://127.0.0.1:3000/friend/accept', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ requestId })
+      });
+
+      if (res.ok) {
+        alert('Friend request accepted!');
+        LoadFriends(); // Refresh the friend list
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to accept friend request');
+      }
+    }
+
+    async function rejectFriend(requestId) {
+      const token = localStorage.getItem('access-token');
+      if (!token) {
+        alert('Sign in to perform this action');
+        return;
+      }
+
+      const res = await fetch('http://127.0.0.1:3000/friend/reject', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ requestId })
+      });
+
+      if (res.ok) {
+        alert('Friend request rejected!');
+        LoadFriends(); // Refresh the friend list
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to reject friend request');
+      }
+    }
+
+    async function removeFriend(friendId) {
+      const token = localStorage.getItem('access-token');
+      if (!token) {
+        alert('Sign in to perform this action');
+        return;
+      }
+
+      const res = await fetch('http://127.0.0.1:3000/friend/remove', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ friendId })
+      });
+
+      if (res.ok) {
+        alert('Friend removed!');
+        LoadFriends(); // Refresh the friend list
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to remove friend');
+      }
+    }
+</script>
+</html>

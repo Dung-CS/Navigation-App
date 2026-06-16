@@ -15,6 +15,23 @@ router.post("/logout", async (req, res) => {
   return res.json({ message: "Logged out successfully" });
 });
 
+router.get('/me', async(req,res) => {
+    const auth_header = req.headers['authorization'];
+    if (!auth_header) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+    const token = auth_header.split(" ")[1];
+    
+    // Verify token and get user
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+        return res.status(401).json({ error: "Invalid or expired token" });
+    }
+
+    return res.json({ userId: user.id });
+  });
+
 router.get("/check-session", async (req, res) => {
   const authHeader = req.headers["authorization"];
   if (!authHeader) return res.status(401).json({ error: "No token provided" });
@@ -103,6 +120,19 @@ router.get("/username", async (req, res) => {
   }
 
   return res.json({ username: data.username });
+});
+
+router.get('/:id', async (req,res) => {
+  const id = req.params.id;
+  const {data, error} = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', id)
+    .single();
+  if (error || !data){
+    return res.status(400).json({error: 'Cannot found user'});
+  }
+  return res.json({username: data.username});
 });
 
 module.exports = router;
