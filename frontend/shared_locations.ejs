@@ -139,7 +139,7 @@
 
     async function LoadLocations(){
         const token = localStorage.getItem('access-token');
-        const meRes = await fetch ('http://127.0.0.1:3000/auth/me', {
+        const meRes = await fetch ('/auth/me', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -150,7 +150,7 @@
         const userId = meData.userId;
 
     try{
-        const res = await fetch(`http://127.0.0.1:3000/location/share/${userId}`, {
+        const res = await fetch(`/location/share/${userId}`, {
   method: 'GET',
   headers: { 'Content-Type': 'application/json' }
 });
@@ -198,5 +198,5 @@ container.appendChild(cardsContainer);
   }
     }
 </script>
-<script src="/index.js"></script>
+<script type="module" src="/index.js"></script>
 </html>

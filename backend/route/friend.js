@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../supabase/db');
-const path= require('path');
 
 router.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/friend.html'));
+    res.render('friend');
 })
 
 router.get('/pending/:id', async(req, res) => {
