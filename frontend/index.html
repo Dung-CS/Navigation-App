@@ -726,6 +726,23 @@ window.addEventListener("DOMContentLoaded", () => {
   // Export for use from index.js
   window.startFinderForLocation = startFinder;
 
+  // Check for pending target spot (from navigation from shared_locations.html)
+  window.addEventListener("load", () => {
+    try {
+      const pendingSpotJson = sessionStorage.getItem('pendingTargetSpot');
+      if (pendingSpotJson) {
+        const targetSpot = JSON.parse(pendingSpotJson);
+        sessionStorage.removeItem('pendingTargetSpot');
+        // Give the page a moment to fully initialize before starting finder
+        setTimeout(() => {
+          startFinder(targetSpot);
+        }, 100);
+      }
+    } catch (e) {
+      console.error('Error loading pending target spot:', e);
+    }
+  });
+
   /* ---------- finder button handler ---------- */
   $("findBtn").addEventListener("click", () => {
     if (!spot) return;

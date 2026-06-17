@@ -207,9 +207,14 @@ function findLocation(lat, lng, name) {
   // Store temporarily to use with finder screen
   window.targetSpot = targetSpot
 
-  // Trigger the same logic as the find button in the finder screen
+  // Check if we have the startFinderForLocation function available
   if (typeof startFinderForLocation === 'function') {
+    // We're already on index.html, use it directly
     startFinderForLocation(targetSpot)
+  } else {
+    // We're on another page (like shared_locations.html), store and navigate
+    sessionStorage.setItem('pendingTargetSpot', JSON.stringify(targetSpot))
+    window.location.href = '/'
   }
 }
 
