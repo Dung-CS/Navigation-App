@@ -132,7 +132,7 @@
     <h1>Friends</h1>
     <p>Look up using username to make friends!!!</p>
     <form id="friend">
-  <input type="text" id="friendName" required> <button class="btn search" type="submit">Search</button>
+  <input type="text" id="friendName" name="friendName" required> <button class="btn search" type="submit">Search</button>
 </form>
 
 
@@ -165,7 +165,7 @@ async function searchFriend() {
     return;
   }
 
-  const res = await fetch("http://127.0.0.1:3000/friend/request", {
+  const res = await fetch("/friend/request", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -197,7 +197,7 @@ async function searchFriend() {
     async function loadPending(token) {
   try {
     // Step 1: Get current user info
-    const meRes = await fetch('http://127.0.0.1:3000/auth/me', {
+    const meRes = await fetch('/auth/me', {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -205,7 +205,7 @@ async function searchFriend() {
     const userId = meData.userId; // actual UUID
 
     // Step 2: Get pending friend requests
-    const res = await fetch(`http://127.0.0.1:3000/friend/pending/${userId}`, {
+    const res = await fetch(`/friend/pending/${userId}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -229,7 +229,7 @@ async function searchFriend() {
         card.className = 'card';
 
         // Fetch the friend's username
-        const nameRes = await fetch(`http://127.0.0.1:3000/auth/${friend.user_id}`, {
+        const nameRes = await fetch(`/auth/${friend.user_id}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         });
@@ -271,7 +271,7 @@ async function searchFriend() {
     async function loadAccept(token) {
   try {
     // Step 1: Get current user info
-    const meRes = await fetch('http://127.0.0.1:3000/auth/me', {
+    const meRes = await fetch('/auth/me', {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -279,7 +279,7 @@ async function searchFriend() {
     const userId = meData.userId; // UUID of logged-in user
 
     // Step 2: Get accepted friends
-    const res = await fetch(`http://127.0.0.1:3000/friend/${userId}`, {
+    const res = await fetch(`/friend/${userId}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -302,7 +302,7 @@ async function searchFriend() {
 
         // Fetch the friend's username
         const searchId = friend.user_id === userId ? friend.friend_id : friend.user_id;
-        const nameRes = await fetch(`http://127.0.0.1:3000/auth/${searchId}`, {
+        const nameRes = await fetch(`/auth/${searchId}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         });
@@ -351,7 +351,7 @@ async function searchFriend() {
         return;
       }
 
-      const res = await fetch('http://127.0.0.1:3000/friend/accept', {
+      const res = await fetch('/friend/accept', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -376,7 +376,7 @@ async function searchFriend() {
         return;
       }
 
-      const res = await fetch('http://127.0.0.1:3000/friend/reject', {
+      const res = await fetch('/friend/reject', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -401,7 +401,7 @@ async function searchFriend() {
         return;
       }
 
-      const res = await fetch('http://127.0.0.1:3000/friend/remove', {
+      const res = await fetch('/friend/remove', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

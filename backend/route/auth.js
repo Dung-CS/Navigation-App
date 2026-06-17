@@ -1,6 +1,5 @@
 const express = require('express');
 const supabase = require('../supabase/db');
-const path = require('path');
 
 const router = express.Router();
 
@@ -49,10 +48,10 @@ router.get("/check-session", async (req, res) => {
 });
 
 router.get('/register', async(req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/register.html'));
+  res.render('register');
 });
 router.get('/login', async(req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/login.html'));
+  res.render('login');
 });
 
 router.post('/register', async (req, res) => {

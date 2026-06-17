@@ -15,7 +15,7 @@ create table locations (
 
 alter table locations
 add column is_public boolean default false, -- default private
-add column category text check (category in ('food','drink','entertain','other')),
+add column category text check (category in ('hidden_gem','local_secret','attraction','food','drink','entertain','nature','quiet','other')),
 add column shared_with uuid[] default '{}'; -- default empty array
 
 create table friends (
@@ -32,4 +32,14 @@ create table location_shares (
   shared_by uuid references profiles(id) on delete cascade,
   shared_with uuid references profiles(id) on delete cascade,
   created_at timestamp default now()
+);
+
+create table location_votes (
+  id uuid primary key default gen_random_uuid(),
+  location_id uuid references locations(id) on delete cascade,
+  profile_id uuid references profiles(id) on delete cascade,
+  vote smallint check (vote in (-1, 1)),
+  created_at timestamp default now(),
+  updated_at timestamp default now(),
+  unique(location_id, profile_id)
 );
