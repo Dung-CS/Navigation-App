@@ -85,6 +85,19 @@
     margin-top: 8px;
   }
 
+  .hero-copy {
+    margin-top: 10px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    font-size: 14px;
+  }
+
+  .hero-actions {
+    display: none;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
   h2 {
     font-size: 20px;
     margin-bottom: 8px;
@@ -203,11 +216,15 @@
   <main class="shell">
     <section class="hero">
       <div class="eyebrow">Account</div>
-      <h1>Your profile hub.</h1>
-      <p>Handle login, registration, and account-related settings from one dedicated place instead of mixing them into the compass view.</p>
+      <h1 id="accountHeroTitle">Hi there</h1>
+      <p class="hero-copy" id="accountHeroCopy">Sign in to manage friends, saved spots, and shared locations from one place.</p>
+      <div class="btn-row hero-actions" id="signedInActions">
+        <a class="btn ghost" href="/friend">Open social</a>
+        <button class="btn warn" type="button" onclick="logout()">Logout</button>
+      </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="accountAccessPanel">
       <div id="signedOutView">
         <h2>Sign in or create an account</h2>
         <p>Use your account to save spots across sessions, manage friends, and see locations shared with you.</p>
@@ -217,35 +234,9 @@
         </div>
       </div>
 
-      <div id="signedInView" style="display:none;">
-        <h2 id="accountGreeting">Welcome back</h2>
-        <p id="accountSubtext">You are signed in and ready to explore.</p>
-        <div class="btn-row">
-          <a class="btn ghost" href="/friend">Open social</a>
-          <button class="btn warn" type="button" onclick="logout()">Logout</button>
-        </div>
-      </div>
-
       <div class="status" id="accountStatus"></div>
     </section>
 
-    <section class="panel">
-      <div class="eyebrow">Settings</div>
-      <div class="setting-list">
-        <div class="setting-item">
-          <strong>Saved spots</strong>
-          <p>Keep location saving and public spot discovery tied to your account activity.</p>
-        </div>
-        <div class="setting-item">
-          <strong>Social hub</strong>
-          <p>Open the Social tab to manage friends and navigate to spots sent by your circle.</p>
-        </div>
-        <div class="setting-item">
-          <strong>Compass permissions</strong>
-          <p>For the best experience on mobile, allow GPS and orientation access when your browser prompts you.</p>
-        </div>
-      </div>
-    </section>
   </main>
 
   <nav class="bottom-tabs" aria-label="Primary">
@@ -271,17 +262,21 @@
 
   <script>
     function setSignedInState(username) {
+      document.getElementById("accountHeroTitle").innerText = username ? `Hi, ${username}` : "Hi there";
+      document.getElementById("accountHeroCopy").innerText = "Your account is active. You can manage friends, saved spots, and shared locations from here.";
       document.getElementById("signedOutView").style.display = "none";
-      document.getElementById("signedInView").style.display = "block";
-      document.getElementById("accountGreeting").innerText = username ? `Hi, ${username}` : "Welcome back";
-      document.getElementById("accountSubtext").innerText = "Your account is active. You can manage friends, saved spots, and shared locations from here.";
+      document.getElementById("signedInActions").style.display = "grid";
+      document.getElementById("accountAccessPanel").style.display = "none";
       document.getElementById("accountStatus").textContent = "";
       document.getElementById("accountStatus").classList.remove("error");
     }
 
     function setSignedOutState(message, isError) {
+      document.getElementById("accountHeroTitle").innerText = "Account";
+      document.getElementById("accountHeroCopy").innerText = "Sign in to manage friends, saved spots, and shared locations from one place.";
       document.getElementById("signedOutView").style.display = "block";
-      document.getElementById("signedInView").style.display = "none";
+      document.getElementById("signedInActions").style.display = "none";
+      document.getElementById("accountAccessPanel").style.display = "block";
       const status = document.getElementById("accountStatus");
       status.textContent = message || "";
       status.classList.toggle("error", !!isError);
