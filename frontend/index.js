@@ -131,6 +131,7 @@ async function loadLocations() {
             <span>&#8942;</span>
           </button>
           <div class="card-menu-panel">
+            <button class="menu-action rename-location" type="button">Rename</button>
             <button class="menu-action toggle-privacy" type="button">
               ${loc.is_public ? "Make Private" : "Make Public"}
             </button>
@@ -186,6 +187,7 @@ async function loadLocations() {
       card.querySelector('.find').addEventListener('click', () => {
         if (coords) findLocation(coords.lat, coords.lng, loc.name, loc.id, !!loc.is_public);
       });
+      card.querySelector('.rename-location').addEventListener('click', () => renameLocation(loc.id, loc.name));
       card.querySelector('.delete-location').addEventListener('click', () => deleteLocation(loc.id));
       card.querySelector('.toggle-privacy').addEventListener('click', () => togglePrivacy(loc.id, loc.is_public));
       card.querySelector('.location-category').addEventListener('change', (event) => {
@@ -325,6 +327,40 @@ async function togglePrivacy(locationId, currentStatus) {
     loadLocations();
   } else {
     alert(result.error);
+  }
+}
+
+async function renameLocation(locationId, currentName) {
+  const token = localStorage.getItem("access-token");
+  if (!token) {
+    alert("Sign in to rename locations!");
+    return;
+  }
+
+  const nextName = prompt("Rename this saved location:", currentName || "");
+  if (nextName === null) return;
+
+  const trimmedName = nextName.trim();
+  if (!trimmedName) {
+    alert("Location name cannot be empty.");
+    return;
+  }
+
+  const res = await fetch(`/location/${locationId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify({ name: trimmedName })
+  });
+
+  const result = await res.json();
+  if (res.ok) {
+    alert("Location renamed");
+    loadLocations();
+  } else {
+    alert(result.error || "Failed to rename location");
   }
 }
 

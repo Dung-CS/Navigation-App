@@ -210,15 +210,20 @@ router.post('/:id/vote', async (req, res) => {
 
 router.put('/:id', async (req,res) => {
   const {id} = req.params;
-  const {is_public, category, shared_with} = req.body;
+  const {name, is_public, category, shared_with} = req.body;
   const updates = {};
 
+  if (typeof name !== 'undefined') updates.name = (name || '').trim();
   if (typeof is_public !== 'undefined') updates.is_public = is_public;
   if (typeof category !== 'undefined') updates.category = category || null;
   if (typeof shared_with !== 'undefined') updates.shared_with = shared_with;
 
   if (!Object.keys(updates).length) {
     return res.status(400).json({ error: "No location fields provided" });
+  }
+
+  if (typeof updates.name !== 'undefined' && !updates.name) {
+    return res.status(400).json({ error: "Location name cannot be empty" });
   }
   
   const {data, error} = await supabase
