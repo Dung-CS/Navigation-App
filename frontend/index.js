@@ -610,6 +610,7 @@ function renderSuggestions(locations) {
       <div class="name">${loc.name}</div>
       <div class="meta">
         <div>${categoryLabel(loc.category)} · ${formatDistance(loc.distance_m)} away</div>
+        <div>${loc.creator_username ? `Made public by ${loc.creator_username}` : 'Made public by a nearby explorer'}</div>
         <div>Saved ${dateStr}</div>
         <div class="coordinates">${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}</div>
       </div>

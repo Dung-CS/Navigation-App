@@ -149,6 +149,23 @@ router.get('/suggestions', async (req, res) => {
       }))
       .filter(location => location.distance_m >= minDistance && location.distance_m <= maxDistance);
 
+    const creatorIds = [...new Set(withDistance.map((location) => location.profile_id).filter(Boolean))];
+    let usernamesById = {};
+
+    if (creatorIds.length) {
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', creatorIds);
+
+      if (profileError) return res.status(400).json({ error: profileError.message });
+
+      usernamesById = (profiles || []).reduce((acc, profile) => {
+        acc[profile.id] = profile.username;
+        return acc;
+      }, {});
+    }
+
     const votesByLocation = await getVoteTotals(withDistance.map(location => location.id));
 
     const suggestions = withDistance
@@ -159,6 +176,7 @@ router.get('/suggestions', async (req, res) => {
 
         return {
           ...location,
+          creator_username: usernamesById[location.profile_id] || null,
           ...votes,
           suitability
         };
