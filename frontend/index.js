@@ -62,6 +62,161 @@ function closeOpenCardMenus(exceptMenu) {
   });
 }
 
+function ensureShareModalStyles() {
+  if (document.getElementById('share-modal-styles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'share-modal-styles';
+  style.textContent = `
+    .share-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(74, 47, 103, 0.24);
+      backdrop-filter: blur(10px);
+      z-index: 999;
+    }
+
+    .share-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(92vw, 380px);
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.86);
+      border-radius: 28px;
+      padding: 20px;
+      z-index: 1000;
+      box-shadow: 0 20px 50px rgba(130, 92, 160, 0.24);
+      max-height: 78vh;
+      overflow: hidden;
+      color: #4a2f67;
+      font-family: "Avenir Next Rounded", "Trebuchet MS", "Gill Sans", sans-serif;
+    }
+
+    .share-modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .share-modal h3 {
+      font-size: 20px;
+      margin: 0 0 4px;
+    }
+
+    .share-modal-copy {
+      color: rgba(74, 47, 103, 0.72);
+      font-size: 13px;
+      line-height: 1.45;
+      margin: 0;
+    }
+
+    .share-close {
+      width: 42px;
+      min-width: 42px;
+      min-height: 42px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 112, 176, 0.14);
+      background: rgba(255, 255, 255, 0.78);
+      color: #4a2f67;
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .share-search {
+      width: 100%;
+      min-height: 48px;
+      margin-bottom: 14px;
+      padding: 13px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 112, 176, 0.18);
+      background: rgba(255, 255, 255, 0.92);
+      color: #4a2f67;
+      font: inherit;
+    }
+
+    .share-friend-list {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+      margin: 0 0 14px;
+      padding: 0 4px 0 0;
+      max-height: min(48vh, 360px);
+      overflow-y: auto;
+    }
+
+    .share-friend-list li {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.84);
+    }
+
+    .share-friend-meta {
+      min-width: 0;
+    }
+
+    .share-friend-name {
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .share-friend-note {
+      margin-top: 4px;
+      color: rgba(74, 47, 103, 0.48);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .share-modal .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 14px;
+      border: none;
+      border-radius: 16px;
+      color: white;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      background: linear-gradient(135deg, #ff5eb2, #ff8a85);
+      box-shadow: 0 14px 26px rgba(255, 94, 178, 0.26);
+      width: auto;
+      flex: 0 0 auto;
+    }
+
+    .share-modal .btn.ghost {
+      width: 100%;
+      min-height: 48px;
+      justify-content: center;
+      color: #4a2f67;
+      background: rgba(255, 255, 255, 0.74);
+      border: 1px solid rgba(255, 112, 176, 0.16);
+      box-shadow: none;
+    }
+
+    .share-empty {
+      color: rgba(74, 47, 103, 0.48);
+      font-size: 13px;
+      text-align: center;
+      padding: 18px 8px 8px;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
 function getCurrentPosition() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -222,20 +377,36 @@ async function openShareMenu(locationId) {
     return;
   }
 
-  // Create a simple popup list
+  ensureShareModalStyles();
+  closeShareMenu();
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "share-backdrop";
+  backdrop.addEventListener("click", closeShareMenu);
+
   const modal = document.createElement("div");
   modal.className = "share-modal";
   modal.innerHTML = `
-    <h3>Share Location</h3>
-    <ul class="friend-list"><li>Loading friends...</li></ul>
-    <button class="btn ghost" onclick="closeShareMenu()">Cancel</button>
+    <div class="share-modal-head">
+      <div>
+        <h3>Share Location</h3>
+        <p class="share-modal-copy">Choose a friend below or search by username.</p>
+      </div>
+      <button class="share-close" type="button" aria-label="Close share window">&times;</button>
+    </div>
+    <input class="share-search" id="shareSearchInput" type="search" placeholder="Search username" autocomplete="off">
+    <ul class="friend-list share-friend-list"><li class="share-empty">Loading friends...</li></ul>
+    <button class="btn ghost" type="button" onclick="closeShareMenu()">Cancel</button>
   `;
+  modal.querySelector(".share-close")?.addEventListener("click", closeShareMenu);
+  modal.addEventListener("click", (event) => event.stopPropagation());
+  document.body.appendChild(backdrop);
   document.body.appendChild(modal);
 
   const list = modal.querySelector(".friend-list");
+  const searchInput = modal.querySelector("#shareSearchInput");
 
   try {
-    // Fetch accepted friends
     const meRes = await fetch("/auth/me", {
       headers: { "Authorization": `Bearer ${token}` }
     });
@@ -250,11 +421,10 @@ async function openShareMenu(locationId) {
     const friends = await res.json();
     if (!res.ok) throw new Error(friends.error || "Unable to load friends");
 
-    list.innerHTML = "";
-
     if (friends && friends.length > 0) {
+      const friendOptions = [];
+
       for (const friend of friends) {
-        const li = document.createElement("li");
         const searchId = friend.user_id === userId ? friend.friend_id : friend.user_id;
         const nameRes = await fetch(`/auth/${searchId}`, {
           method: 'GET',
@@ -265,28 +435,56 @@ async function openShareMenu(locationId) {
         const nameData = await nameRes.json();
         if (!nameRes.ok) throw new Error(nameData.error || "Unable to load a friend's username");
 
-        li.innerHTML = `
-          <span>${nameData.username}</span>
-          <button class="btn" onclick="shareLocation('${locationId}', '${searchId}')">Share</button>
-        `;
-        list.appendChild(li);
+        friendOptions.push({
+          id: searchId,
+          username: nameData.username
+        });
       }
+
+      const renderFriendOptions = (filterValue = "") => {
+        const query = filterValue.trim().toLowerCase();
+        const filtered = !query
+          ? friendOptions
+          : friendOptions.filter((friend) => friend.username.toLowerCase().includes(query));
+
+        list.innerHTML = "";
+
+        if (!filtered.length) {
+          list.innerHTML = '<li class="share-empty">No friends match that name yet.</li>';
+          return;
+        }
+
+        for (const friend of filtered) {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <div class="share-friend-meta">
+              <div class="share-friend-name">${friend.username}</div>
+              <div class="share-friend-note">Share this saved spot directly with ${friend.username}.</div>
+            </div>
+            <button class="btn" type="button">Share</button>
+          `;
+          li.querySelector("button")?.addEventListener("click", () => shareLocation(locationId, friend.id));
+          list.appendChild(li);
+        }
+      };
+
+      searchInput?.addEventListener("input", (event) => {
+        renderFriendOptions(event.target.value);
+      });
+
+      renderFriendOptions();
     } else {
-      const li = document.createElement("li");
-      li.textContent = "No accepted friends yet";
-      list.appendChild(li);
+      list.innerHTML = '<li class="share-empty">No accepted friends yet.</li>';
     }
 
   } catch (err) {
     console.error("Error opening share menu:", err);
-    list.innerHTML = "";
-    const li = document.createElement("li");
-    li.textContent = err.message || "Failed to load friends";
-    list.appendChild(li);
+    list.innerHTML = `<li class="share-empty">${err.message || "Failed to load friends"}</li>`;
   }
 }
 
 function closeShareMenu() {
+  document.querySelector(".share-backdrop")?.remove();
   document.querySelector(".share-modal")?.remove();
 }
 
