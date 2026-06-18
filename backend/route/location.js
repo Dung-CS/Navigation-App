@@ -75,7 +75,7 @@ router.get('/share/:id', async(req,res) => {
   try {
     const { data, error: fetchError } = await supabase
       .from('location_shares')
-      .select('location_id, shared_by, locations(id, name, lat, lng, profile_id, created_at, category, is_public)')
+      .select('id, location_id, shared_by, shared_with, created_at, locations(id, name, lat, lng, profile_id, created_at, category, is_public)')
       .eq('shared_with', userId);
 
     if (fetchError) return res.status(400).json({ error: fetchError.message });
@@ -99,9 +99,10 @@ router.get('/share/:id', async(req,res) => {
 
     const sharedLocations = data.map(share => ({
       ...share.locations,
-      share_id: share.location_id,
+      share_id: share.id,
       shared_by: share.shared_by,
-      shared_by_username: usernamesById[share.shared_by] || null
+      shared_by_username: usernamesById[share.shared_by] || null,
+      shared_at: share.created_at
     }));
 
     return res.json(sharedLocations);
@@ -327,6 +328,30 @@ router.post("/share", async (req, res) => {
 
   if (shareError) return res.status(400).json({ error: shareError.message });
   res.json({ message: "Shared successfully", data });
+});
+
+router.delete("/share/:shareId", async (req, res) => {
+  const { shareId } = req.params;
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) return res.status(401).json({ error: "No token provided" });
+  const token = authHeader.split(" ")[1];
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) return res.status(401).json({ error: "Invalid token" });
+
+  const { data, error: deleteError } = await supabase
+    .from("location_shares")
+    .delete()
+    .eq("id", shareId)
+    .eq("shared_with", user.id)
+    .select();
+
+  if (deleteError) return res.status(400).json({ error: deleteError.message });
+  if (!data || data.length === 0) {
+    return res.status(404).json({ error: "Shared location not found" });
+  }
+
+  return res.json({ message: "Shared location removed", data });
 });
 
 

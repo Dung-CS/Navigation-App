@@ -396,8 +396,7 @@
     <section class="panel">
       <div class="saved-header">
         <div>
-          <div class="eyebrow">Shared</div>
-          <h2>Shared spots</h2>
+          <h2>Shared with you</h2>
         </div>
       </div>
       <div id="sharedPortal">Loading shared spots...</div>
@@ -475,7 +474,7 @@
         cardsContainer.className = "spot-cards-container";
 
         for (const loc of locations) {
-          const dateStr = new Date(loc.created_at).toLocaleString() || "Date unknown";
+          const dateStr = new Date(loc.shared_at || loc.created_at).toLocaleString() || "Date unknown";
           const sharedBy = loc.shared_by_username ? `Shared by ${loc.shared_by_username}` : "Shared by a friend";
           const card = document.createElement("div");
           card.className = "spot-card";
@@ -488,9 +487,11 @@
             </div>
             <div class="row">
               <button class="btn find" type="button">Open compass</button>
+              <button class="btn ghost remove-shared" type="button">Remove</button>
             </div>
           `;
-          card.querySelector("button").addEventListener("click", () => openFinder(loc));
+          card.querySelector(".find").addEventListener("click", () => openFinder(loc));
+          card.querySelector(".remove-shared").addEventListener("click", () => removeSharedLocation(loc.share_id));
           cardsContainer.appendChild(card);
         }
 
@@ -505,6 +506,38 @@
       loadLocations();
       loadSharedLocations();
     });
+
+    async function removeSharedLocation(shareId) {
+      const token = localStorage.getItem("access-token");
+      if (!token) {
+        alert("Sign in to manage shared spots.");
+        return;
+      }
+
+      if (!shareId) {
+        alert("This shared location is missing its share record.");
+        return;
+      }
+
+      if (!confirm("Remove this shared spot from your list?")) {
+        return;
+      }
+
+      const res = await fetch(`/location/share/${shareId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        alert(result.error || "Failed to remove shared spot.");
+        return;
+      }
+
+      loadSharedLocations();
+    }
   </script>
 </body>
 </html>
