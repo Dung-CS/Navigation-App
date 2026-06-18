@@ -135,10 +135,6 @@ router.get('/suggestions', async (req, res) => {
       query = query.eq('category', category);
     }
 
-    if (user) {
-      query = query.neq('profile_id', user.id);
-    }
-
     const { data: locations, error } = await query.limit(250);
     if (error) return res.status(400).json({ error: error.message });
 
