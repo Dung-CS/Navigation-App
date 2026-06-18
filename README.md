@@ -1,58 +1,225 @@
-# Project Writeup: Waypoint Navigation App
+# Waypoint
 
-## Product Overview
+Waypoint is a mobile-first location-sharing web app for saving personal spots, navigating back to them with a compass-style finder, and discovering public places shared by the community.
 
-Waypoint is a location-based web app that helps users save meaningful places, find their way back to them, and share those places with friends. Instead of acting like a full map application, Waypoint focuses on a simpler personal navigation experience: users can store a spot using their current GPS location, organize saved places by category, make selected locations public or private, and use a direction-and-distance finder to return to a saved destination, which can be really helpful in case the destinations are stations in a mass game event e.g.
+It is built with Express, EJS, browser JavaScript, and Supabase Auth/Postgres.
 
-The app also supports social discovery. Users can add friends, share saved locations with accepted friends, browse shared locations, and explore public destination suggestions based on their current location, distance filters, categories, and community votes.
+## Features
 
-## Target Users
+- Save your current GPS position as a named spot
+- Navigate back to a spot with a live compass and distance readout
+- Keep spots private or make them public
+- Categorize saved locations
+- Share saved spots with friends
+- Send and manage friend requests
+- Explore nearby public spots by category and distance
+- Upvote or downvote public destinations
 
-Waypoint is designed for people who want to remember and rediscover physical places that may not be easy to find again through a traditional search. This includes students, travelers, hikers, event attendees, and local explorers who want to save places like quiet study spots, food locations, hidden gems, scenic views, or personal landmarks.
+## Tech Stack
 
-The friend and sharing features make the app useful for small groups who exchange recommendations, such as classmates sharing campus spots, friends sharing local hangouts, or travelers passing along places they discovered.
+- Frontend: EJS templates, vanilla JavaScript, CSS
+- Backend: Node.js, Express
+- Database/Auth: Supabase Auth + Supabase Postgres
+- Dev tooling: Vite, Nodemon
+- Browser APIs: Geolocation API, Device Orientation API
 
-## Problem Solved
+## Project Structure
 
-Many location tools are built around addresses, businesses, and map search. That works well for official destinations, but it is less useful for informal or personal places: a picnic spot in a park, an unmarked shortcut, a good view, or a place a friend found while walking around.
+```text
+backend/
+  route/
+    auth.js
+    friend.js
+    location.js
+  supabase/
+    db.js
+    schema.sql
+    location_votes_migration.sql
+    suggestion_seed.sql
+  server.js
 
-Waypoint solves this by letting users save their exact GPS coordinates with a custom name. The app keeps those saved locations tied to a user account, lets users manage privacy, and provides a simple finder interface that points the user back toward a selected place. Public suggestions and voting add a lightweight recommendation layer so useful destinations can surface for other users nearby.
+frontend/
+  account.ejs
+  drops.ejs
+  friend.ejs
+  index.ejs
+  index.js
+  login.ejs
+  register.ejs
+  shared_locations.ejs
+  supabaseClient.js
+```
 
-## Core Features
+## Architecture
 
-- **User accounts:** Users can register, log in, log out, and maintain a session with Supabase authentication tokens.
-- **Save current location:** The browser Geolocation API captures latitude and longitude, and the app saves the location under a user-provided name.
-- **Saved location list:** Authenticated users can view, delete, categorize, and update privacy settings for their saved locations.
-- **Finder mode:** Users can select a saved or shared location and navigate toward it using distance and direction feedback.
-- **Friend system:** Users can send, accept, reject, and remove friend relationships.
-- **Location sharing:** Users can share saved locations with friends through the `location_shares` table.
-- **Public suggestions:** Public locations can be filtered by category and distance from the user's current position.
-- **Voting:** Users can upvote or downvote public destinations, and suggestion ranking uses both distance and vote score.
+```mermaid
+flowchart LR
+  U[User on Mobile or Browser]
 
-## Technologies Used
+  subgraph FE[Frontend]
+    P[EJS pages<br/>index, drops, friend, account,<br/>login, register]
+    JS[index.js<br/>UI logic, compass flow, fetch calls]
+    GEO[Browser Geolocation API]
+    ORIENT[Browser Device Orientation API]
+    STORE[localStorage and sessionStorage]
+  end
 
-The frontend is built with **EJS templates**, browser JavaScript, and CSS. EJS renders pages such as the home screen, login, registration, friends, and shared locations. The main frontend behavior lives in `frontend/index.js`, which handles form submissions, API requests, geolocation, saved location rendering, sharing workflows, suggestion filtering, and voting interactions.
+  subgraph BE[Backend]
+    S[Express server<br/>backend/server.js]
+    A[/auth routes/]
+    L[/location routes/]
+    F[/friend routes/]
+    SC[Supabase service-role client]
+  end
 
-The backend uses **Node.js** with **Express**. `backend/server.js` configures JSON parsing, EJS rendering, development Vite middleware, static production assets, and route mounting. The backend is organized into feature routers:
+  subgraph SUPA[Supabase Cloud]
+    AUTH[Supabase Auth]
+    DB[(Postgres)]
+    T1[profiles]
+    T2[locations]
+    T3[friends]
+    T4[location_shares]
+    T5[location_votes]
+  end
 
-- `backend/route/auth.js` handles registration, login, logout, session checks, and username lookup.
-- `backend/route/location.js` handles saved locations, sharing, suggestions, privacy/category updates, deletion, and voting.
-- `backend/route/friend.js` handles friend requests and friend relationship management.
+  U --> P
+  P --> JS
+  JS --> GEO
+  JS --> ORIENT
+  JS --> STORE
+  JS -->|HTTP fetch + bearer token| S
+  S --> A
+  S --> L
+  S --> F
+  A --> SC
+  L --> SC
+  F --> SC
+  SC --> AUTH
+  SC --> DB
+  DB --> T1
+  DB --> T2
+  DB --> T3
+  DB --> T4
+  DB --> T5
+  AUTH --> T1
+```
 
-The database and authentication layer use **Supabase**. Supabase Auth manages user accounts and JWT session tokens. Supabase Postgres stores application data in tables for `profiles`, `locations`, `friends`, `location_shares`, and `location_votes`. The backend accesses Supabase through a service-role client in `backend/supabase/db.js`, while `frontend/supabaseClient.js` also initializes the Supabase browser SDK with the public anon key.
+## Getting Started
 
-The app uses the **Browser Geolocation API** to capture the user's current coordinates. These coordinates are used when saving a new location and when searching for public suggestions within a distance range.
+### 1. Install dependencies
 
-For development and asset handling, the project uses **Vite** in middleware mode during development and builds production frontend assets into `dist/`.
+```bash
+npm install
+```
 
-## Implementation Approach
+### 2. Create `.env`
 
-The team separated the application into a client layer, an API layer, and a cloud data layer. The frontend is responsible for collecting user input, requesting geolocation permission, rendering dynamic cards, and calling backend endpoints with the user's access token. The Express backend verifies those tokens with Supabase Auth before performing protected operations.
+Create a `.env` file in the project root:
 
-Data is modeled around user-owned locations. Each saved location belongs to a profile, can be public or private, and can have a category. Friend relationships are stored separately, which allows the app to share a location with specific accepted users without making it public. Public destination suggestions are generated by querying public locations, calculating distance from the user's current coordinates, applying filters, adding vote totals, and returning the best-ranked results.
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+PORT=3000
+HOST=0.0.0.0
+```
 
-This architecture keeps sensitive database operations on the server while still allowing the browser to provide a responsive experience through fetch requests and local UI updates.
+Notes:
 
-## Impact
+- `SUPABASE_SERVICE_ROLE_KEY` is required by the backend in `backend/supabase/db.js`.
+- The frontend Supabase public client is currently configured in `frontend/supabaseClient.js`.
 
-Waypoint gives users a practical way to remember places that matter to them and discover places that matter to people nearby or get suggestions for surprising destination when they do not know where to go. By combining personal saved locations, friend sharing, public recommendations, and simple direction-based navigation, the app fills a gap between private notes and full map search.
+### 3. Set up Supabase schema
+
+Run these SQL files in the Supabase SQL editor:
+
+1. `backend/supabase/schema.sql`
+2. `backend/supabase/location_votes_migration.sql`
+3. `backend/supabase/suggestion_seed.sql` (optional sample data)
+
+The seed file is useful if you want public locations and vote data for testing suggestions.
+
+### 4. Start the app
+
+For development:
+
+```bash
+npm run dev
+```
+
+For production build:
+
+```bash
+npm run build
+npm start
+```
+
+The app runs by default on:
+
+```text
+http://localhost:3000
+```
+
+## Supabase Tables
+
+The app uses these main tables:
+
+- `profiles`: user profile linked to `auth.users`
+- `locations`: saved spots with coordinates, privacy, and category
+- `friends`: friend requests and accepted relationships
+- `location_shares`: shared saved spots between users
+- `location_votes`: upvotes and downvotes for public locations
+
+## Main User Flows
+
+### Register and Login
+
+- User signs up or logs in through `/auth`
+- Supabase Auth returns a session token
+- The frontend stores and reuses the access token for protected requests
+
+### Save a Spot
+
+- Browser gets the current GPS position
+- Frontend sends `name`, `lat`, and `lng` to `/location`
+- Backend verifies the token and inserts a row into `locations`
+
+### Find a Spot
+
+- User taps `Find` on a saved, shared, or public location
+- Frontend opens compass mode
+- Browser Geolocation and Device Orientation drive the live arrow and distance view
+
+### Discover Public Spots
+
+- Frontend sends current coordinates, category, and distance filter to `/location/suggestions`
+- Backend ranks public locations using distance and vote totals
+
+### Share With Friends
+
+- User sends a friend request by username
+- Accepted friends can receive locations through `location_shares`
+
+## Mobile Testing Notes
+
+- Compass and GPS access on phones usually require HTTPS.
+- Localhost on a laptop works for development, but phone sensors often need a secure tunnel.
+- The app binds to `0.0.0.0` in development so it can be opened from other devices on the same network.
+
+## Current Limitations
+
+- There is no automated test suite yet.
+- Frontend Supabase public config is stored directly in `frontend/supabaseClient.js`.
+- Mobile compass behavior depends on browser permissions and sensor support.
+
+## Scripts
+
+```bash
+npm run dev
+npm run build
+npm start
+```
+
+## Related Docs
+
+- `project-writeup.md`
+- `system-architecture.md`
