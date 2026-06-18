@@ -8,167 +8,888 @@
 <title>Waypoint</title>
 <style>
   :root {
-    --bg: #0b0b0d;
-    --ink: #ffffff;
-    --ink-dim: rgba(255,255,255,0.45);
-    --ink-faint: rgba(255,255,255,0.22);
-    --card: rgba(255,255,255,0.06);
-    --line: rgba(255,255,255,0.12);
-    --accent: #4ade80;
-    --danger: #f87171;
+    --bg-top: #fff6cb;
+    --bg-mid: #ffd3ea;
+    --bg-bottom: #b6f2ff;
+    --surface: rgba(255, 255, 255, 0.78);
+    --surface-strong: rgba(255, 255, 255, 0.92);
+    --surface-soft: rgba(255, 255, 255, 0.58);
+    --line: rgba(255, 110, 168, 0.18);
+    --text: #4a2f67;
+    --text-dim: rgba(74, 47, 103, 0.72);
+    --text-faint: rgba(74, 47, 103, 0.48);
+    --accent: #ff5eb2;
+    --accent-2: #59d7ff;
+    --accent-3: #ffd84f;
+    --success: #42ca84;
+    --danger: #ff6b7d;
+    --shadow: 0 18px 50px rgba(175, 106, 180, 0.16);
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    height: 100%;
+  }
+
   body {
-    background: var(--bg);
-    color: var(--ink);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    min-height: 100%;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.78), transparent 22%),
+      radial-gradient(circle at 82% 16%, rgba(255, 255, 255, 0.62), transparent 18%),
+      radial-gradient(circle at 75% 70%, rgba(255, 244, 181, 0.8), transparent 24%),
+      linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 44%, var(--bg-bottom) 100%);
+    color: var(--text);
+    font-family: "Avenir Next Rounded", "Trebuchet MS", "Gill Sans", sans-serif;
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
   }
-  /* soft ambient glow like the Finding screen */
-  body::before {
+
+  body::before,
+  body::after {
     content: "";
-    position: fixed; inset: 0;
-    background:
-      radial-gradient(60% 40% at 70% 18%, rgba(70,90,140,0.25), transparent 70%),
-      radial-gradient(50% 35% at 25% 80%, rgba(120,90,50,0.12), transparent 70%);
+    position: fixed;
+    border-radius: 999px;
     pointer-events: none;
+    filter: blur(8px);
+    opacity: 0.72;
+  }
+
+  body::before {
+    inset: auto auto 14% -12%;
+    width: 180px;
+    height: 180px;
+    background: rgba(255, 255, 255, 0.45);
+  }
+
+  body::after {
+    inset: 6% -10% auto auto;
+    width: 220px;
+    height: 220px;
+    background: rgba(255, 255, 255, 0.28);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    outline: 2px solid rgba(89, 215, 255, 0.9);
+    outline-offset: 3px;
   }
 
   .screen {
-    position: fixed; inset: 0;
+    position: fixed;
+    inset: 0;
     display: none;
     flex-direction: column;
-    padding: calc(env(safe-area-inset-top, 0px) + 24px) 24px calc(env(safe-area-inset-bottom, 0px) + 24px);
+    padding:
+      calc(env(safe-area-inset-top, 0px) + 18px)
+      16px
+      calc(env(safe-area-inset-bottom, 0px) + 108px);
     overflow: hidden;
   }
-  .screen.active { display: flex; }
 
-  .eyebrow {
-    font-size: 13px; font-weight: 600;
-    letter-spacing: 0.12em;
-    color: var(--ink-dim);
-    text-transform: uppercase;
+  .screen.active {
+    display: flex;
   }
-  h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; }
 
-  /* ---------- HOME ---------- */
-  #home { overflow-y: auto; }
-  #home .lede { color: var(--ink-dim); font-size: 16px; margin-top: 10px; line-height: 1.45; }
-
-  .field { margin-top: 28px; }
-  .field label { display: block; font-size: 13px; color: var(--ink-dim); margin-bottom: 8px; }
-  .field input {
-    width: 100%;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    color: var(--ink);
-    font-size: 17px;
-    padding: 14px 16px;
-    outline: none;
+  #finder {
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
-  .field input:focus { border-color: rgba(255,255,255,0.35); }
 
-  .btn {
-    display: block; width: 100%;
-    border: none; border-radius: 16px;
-    font-size: 17px; font-weight: 600;
-    padding: 16px;
-    cursor: pointer;
-    color: #0b0b0d;
-    background: var(--ink);
-    margin-top: 14px;
-  }
-  .btn:disabled { opacity: 0.5; }
-  .btn.ghost {
-    background: var(--card);
-    color: var(--ink);
-    border: 1px solid var(--line);
-  }
-  .btn.find { background: var(--accent); }
-
-  .spot-card {
-    margin-top: 28px;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 18px;
-  }
-  .spot-card .name { font-size: 19px; font-weight: 700; }
-  .spot-card .meta { color: var(--ink-dim); font-size: 13px; margin-top: 5px; line-height: 1.5; }
-  .spot-card .row { display: flex; gap: 10px; margin-top: 14px; }
-  .spot-card .row .btn { margin-top: 0; }
-
-  .status { margin-top: 16px; font-size: 13px; color: var(--ink-dim); line-height: 1.5; min-height: 20px; }
-  .status.error { color: var(--danger); }
-  .footnote { margin-top: auto; font-size: 12px; color: var(--ink-faint); line-height: 1.6; padding-top: 24px; }
-  .warn-banner {
-    background: rgba(248,113,113,0.12);
-    border: 1px solid rgba(248,113,113,0.4);
-    color: var(--danger);
-    font-size: 13px; line-height: 1.5;
-    border-radius: 12px; padding: 12px 14px; margin-top: 18px;
+  body.finder-active .bottom-tabs,
+  body.finder-active .fab,
+  body.finder-active .save-sheet {
     display: none;
   }
 
-  /* ---------- FINDER ---------- */
-  #finder { text-align: left; }
-  #finder .head { flex: 0 0 auto; }
+  .shell {
+    max-width: 440px;
+    width: 100%;
+    margin: 0 auto;
+  }
 
-  .stage {
-    flex: 1 1 auto;
-    display: flex; align-items: center; justify-content: center;
+  .home-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 8px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 0 5px rgba(255, 94, 178, 0.13);
+  }
+
+  h1 {
+    font-size: clamp(30px, 9vw, 42px);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    margin-top: 8px;
+  }
+
+  h2 {
+    font-size: 18px;
+    line-height: 1.1;
+  }
+
+  .hero-card,
+  .panel,
+  .spot-card,
+  .finder-panel {
+    border: 1px solid rgba(255, 255, 255, 0.68);
+    border-radius: 28px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .hero-card {
+    padding: 18px 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-card::after {
+    content: "";
+    position: absolute;
+    inset: auto -18px -36px auto;
+    width: 120px;
+    height: 120px;
+    border-radius: 28px;
+    background: linear-gradient(145deg, rgba(255, 216, 79, 0.78), rgba(255, 94, 178, 0.28));
+    transform: rotate(22deg);
+  }
+
+  .hero-copy {
+    position: relative;
+    z-index: 1;
+    max-width: 78%;
+  }
+
+  .lede {
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.5;
+    margin-top: 12px;
+  }
+
+  .chip-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  .chip {
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.82);
+  }
+
+  .tab-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 18px;
+    padding: 14px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: var(--surface-strong);
+    color: var(--text);
+    font-weight: 800;
+    box-shadow: 0 10px 28px rgba(175, 106, 180, 0.1);
+  }
+
+  .panel {
+    padding: 16px;
     position: relative;
   }
-  #arrowWrap {
-    width: min(58vw, 300px);
-    height: min(58vw, 300px);
-    will-change: transform;
+
+  .panel.menu-open {
+    z-index: 30;
   }
-  #arrowWrap svg { width: 100%; height: 100%; display: block; }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .panel-note {
+    color: var(--text-faint);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .field-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .field input,
+  .suggestion-controls select,
+  .suggestion-controls input,
+  .location-category {
+    width: 100%;
+    min-height: 48px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--text);
+    border: 1px solid rgba(255, 112, 176, 0.18);
+    border-radius: 16px;
+    padding: 13px 14px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 50px;
+    border: none;
+    border-radius: 18px;
+    font-size: 15px;
+    font-weight: 800;
+    color: white;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), #ff8a85);
+    box-shadow: 0 14px 26px rgba(255, 94, 178, 0.26);
+  }
+
+  .btn:disabled {
+    opacity: 0.55;
+    box-shadow: none;
+  }
+
+  .btn.ghost {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(255, 112, 176, 0.16);
+    box-shadow: none;
+  }
+
+  .btn.find {
+    background: linear-gradient(135deg, var(--accent-2), #36d3a0);
+  }
+
+  .btn.spark {
+    background: linear-gradient(135deg, var(--accent-3), #ffb84f);
+    color: var(--text);
+    box-shadow: 0 14px 26px rgba(255, 199, 71, 0.25);
+  }
+
+  .status {
+    min-height: 18px;
+    color: var(--text-dim);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .status.error {
+    color: var(--danger);
+  }
+
+  .warn-banner {
+    display: none;
+    border-radius: 20px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 107, 125, 0.25);
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--danger);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .welcome-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .welcome-copy p {
+    color: var(--text-dim);
+    margin-top: 4px;
+    font-size: 13px;
+  }
+
+  .welcome-copy h2 {
+    font-size: 20px;
+  }
+
+  .auth-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .auth-actions .btn,
+  .welcome-row .btn {
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .spot-card {
+    margin-top: 0;
+    padding: 16px;
+    position: relative;
+    overflow: visible;
+  }
+
+  .spot-card.menu-open {
+    z-index: 20;
+  }
+
+  .spot-card .name {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .spot-card .meta {
+    color: var(--text-dim);
+    font-size: 12px;
+    margin-top: 7px;
+    line-height: 1.55;
+  }
+
+  .spot-card .coordinates {
+    font-family: "SF Mono", "Monaco", monospace;
+    font-size: 11px;
+  }
+
+  .spot-card .row {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .spot-card .row .btn {
+    max-width: 180px;
+  }
+
+  .spot-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .card-menu {
+    position: relative;
+    flex: 0 0 auto;
+  }
+
+  .card-menu-trigger {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 112, 176, 0.16);
+    background: rgba(255, 255, 255, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(175, 106, 180, 0.08);
+  }
+
+  .card-menu-trigger span {
+    transform: translateY(-2px);
+  }
+
+  .card-menu-panel {
+    position: absolute;
+    top: 48px;
+    right: 0;
+    width: min(250px, 72vw);
+    padding: 12px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 18px 40px rgba(130, 92, 160, 0.18);
+    display: none;
+    gap: 10px;
+    z-index: 10;
+    min-width: 220px;
+  }
+
+  .card-menu.open .card-menu-panel {
+    display: grid;
+  }
+
+  .menu-action {
+    width: 100%;
+    border: none;
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--text);
+    text-align: left;
+    padding: 12px 14px;
+    border-radius: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid rgba(255, 112, 176, 0.12);
+  }
+
+  .menu-action.danger {
+    color: var(--danger);
+  }
+
+  .menu-label {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: -2px;
+  }
+
+  .saved-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .saved-header .btn {
+    width: auto;
+    padding: 0 16px;
+    min-height: 42px;
+  }
+
+  .fab {
+    position: fixed;
+    right: 18px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+    z-index: 30;
+    width: 64px;
+    height: 64px;
+    border-radius: 22px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-3));
+    color: white;
+    font-size: 32px;
+    line-height: 1;
+    box-shadow: 0 20px 38px rgba(255, 94, 178, 0.32);
+    cursor: pointer;
+  }
+
+  .save-sheet {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+    z-index: 25;
+    max-width: 440px;
+    margin: 0 auto;
+    display: none;
+  }
+
+  .save-sheet.open {
+    display: block;
+  }
+
+  .save-sheet .panel {
+    padding: 18px;
+  }
+
+  #locationPortal {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .spot-cards-container,
+  .suggestion-results {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: visible;
+  }
+
+  .suggestion-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .suggestion-controls,
+  .suggestion-actions {
+    display: grid;
+    gap: 10px;
+  }
+
+  .suggestion-score {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 12px;
+    margin-top: 10px;
+  }
+
+  .suggestion-score span {
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .finder-shell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 100%;
+    height: auto;
+    padding-top: 58px;
+    padding-bottom: 12px;
+  }
+
+  .finder-floating-controls {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    z-index: 2;
+  }
+
+  .finder-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .finder-badge {
+    padding: 10px 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.72);
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--accent);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+  }
+
+  .finder-panel {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-rows: auto auto auto;
+    gap: 14px;
+    padding: 18px;
+    text-align: center;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.7)),
+      radial-gradient(circle at top right, rgba(89, 215, 255, 0.18), transparent 40%);
+  }
+
+  .finder-name {
+    font-size: 30px;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+  }
+
+  .finder-subtitle {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 6px;
+  }
+
+  .stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: 0;
+    padding: 8px 0;
+  }
+
+  .compass-ring {
+    width: min(72vw, 320px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.72)),
+      radial-gradient(circle at center, rgba(89, 215, 255, 0.2), transparent 60%);
+    border: 1px solid rgba(255, 255, 255, 0.92);
+    box-shadow:
+      inset 0 0 0 10px rgba(255, 255, 255, 0.45),
+      0 22px 55px rgba(135, 129, 190, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .compass-ring::before,
+  .compass-ring::after {
+    content: "";
+    position: absolute;
+    inset: 18px;
+    border-radius: 50%;
+    border: 1px dashed rgba(255, 94, 178, 0.22);
+  }
+
+  .compass-ring::after {
+    inset: 42px;
+    border-color: rgba(89, 215, 255, 0.22);
+  }
+
+  #arrowWrap {
+    width: min(42vw, 172px);
+    height: min(42vw, 172px);
+    will-change: transform;
+    filter: drop-shadow(0 14px 20px rgba(255, 94, 178, 0.22));
+  }
+
+  #arrowWrap svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
 
   #pulse {
     display: none;
-    width: 140px; height: 140px; border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 0 0 rgba(74,222,128,0.5);
+    width: 122px;
+    height: 122px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-2), var(--success));
+    box-shadow: 0 0 0 0 rgba(89, 215, 255, 0.45);
     animation: pulse 1.6s ease-out infinite;
   }
+
   @keyframes pulse {
-    0%   { box-shadow: 0 0 0 0 rgba(74,222,128,0.5); }
-    100% { box-shadow: 0 0 0 60px rgba(74,222,128,0); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    #pulse { animation: none; }
+    0% { box-shadow: 0 0 0 0 rgba(89, 215, 255, 0.45); }
+    100% { box-shadow: 0 0 0 46px rgba(89, 215, 255, 0); }
   }
 
-  .readout { flex: 0 0 auto; padding-bottom: 8px; }
-  .readout .dist { font-size: 64px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; }
-  .readout .dist .unit { color: var(--ink-dim); font-weight: 500; }
-  .readout .dir { font-size: 52px; font-weight: 500; color: var(--ink-dim); letter-spacing: -0.02em; line-height: 1.1; }
-  .readout .dir b { color: var(--ink); font-weight: 600; }
-  .readout .fine { font-size: 13px; color: var(--ink-faint); margin-top: 10px; min-height: 18px; }
-
-  .controls {
-    flex: 0 0 auto;
-    display: flex; justify-content: space-between; align-items: center;
-    padding-top: 18px;
+  .readout {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
+
+  .readout .dist {
+    font-size: clamp(42px, 14vw, 62px);
+    line-height: 0.95;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+  }
+
+  .readout .dist .unit {
+    color: var(--text-dim);
+    font-size: 0.45em;
+    font-weight: 800;
+    margin-left: 6px;
+    letter-spacing: 0;
+  }
+
+  .readout .dir {
+    font-size: 18px;
+    color: var(--text-dim);
+    min-height: 24px;
+  }
+
+  .readout .dir b {
+    color: var(--text);
+  }
+
+  .readout .fine {
+    font-size: 12px;
+    color: var(--text-faint);
+    min-height: 16px;
+  }
+
+  .finder-vote {
+    display: none;
+    padding: 14px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+  }
+
+  .finder-vote p {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .finder-vote .row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
   .round {
-    width: 64px; height: 64px; border-radius: 50%;
-    border: none;
-    background: rgba(255,255,255,0.14);
-    color: var(--ink);
-    font-size: 24px;
+    width: 54px;
+    min-height: 54px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.84);
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--text);
+    font-size: 20px;
+    font-weight: 800;
     cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 12px 28px rgba(175, 106, 180, 0.1);
   }
-  .round.on { background: var(--ink); color: #0b0b0d; }
 
-  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .round.on {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+  }
+
+  .footnote {
+    color: var(--text-faint);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .share-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(92vw, 360px);
+    background: var(--surface-strong);
+    border: 1px solid rgba(255, 255, 255, 0.86);
+    border-radius: 24px;
+    padding: 20px;
+    z-index: 1000;
+    box-shadow: 0 20px 50px rgba(130, 92, 160, 0.24);
+    max-height: 78vh;
+    overflow-y: auto;
+  }
+
+  .share-modal h3 {
+    font-size: 20px;
+    margin-bottom: 14px;
+  }
+
+  .share-modal .friend-list {
+    list-style: none;
+    margin-bottom: 14px;
+  }
+
+  .share-modal .friend-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 112, 176, 0.12);
+  }
+
+  .share-modal .friend-list li:last-child {
+    border-bottom: none;
+  }
+
+  .share-modal .friend-list .btn {
+    width: auto;
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+
+  .bottom-tabs {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    z-index: 20;
+  }
+
+  .tab-bar {
+    max-width: 440px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    padding: 10px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 20px 45px rgba(129, 106, 177, 0.15);
+  }
+
+  .tab-item {
+    flex-direction: column;
+    padding: 12px 8px;
+    min-height: 64px;
+    font-size: 12px;
+    line-height: 1.15;
+  }
+
+  .tab-icon {
+    font-size: 18px;
+  }
+
+  .tab-item.active {
+    background: linear-gradient(135deg, rgba(255, 94, 178, 0.92), rgba(89, 215, 255, 0.92));
+    color: white;
+    border-color: transparent;
+  }
+
   .sr-only {
     position: absolute;
     width: 1px;
@@ -180,468 +901,217 @@
     white-space: nowrap;
     border: 0;
   }
-  .auth a {
-    text-decoration: none;
-    color: black;
-    
-  }
-  .auth button {
-    display: inline-block;
-    background-color: white;
-    border: none;
-    width: 60px;
-    border-radius: 5px;
-    margin-right: 10px;
-  }
-  .auth {
-    text-align: right;
-  }
-  #welcomeSection button {
-    display: inline-block;
-    background-color: white;
-    border: none;
-    width: 60px;
-    border-radius: 5px;
-    margin-right: 10px;
-    color: black;
-  }
-  #welcomeSection {
-    text-align: right;
-  }
 
-  .auth button:hover {
-    cursor: pointer;
-    background-color: rgb(113,111,111);
-  }
-  #loadLocation{
-    margin: 10px;
-    display: block;
-    background-color: white;
-    border: none;
-    width: 180px;
-    border-radius: 5px;
-    margin-right: 10px;
-    color: black;
-  }
+  @media (min-width: 768px) {
+    .screen {
+      padding-left: 24px;
+      padding-right: 24px;
+    }
 
-  #locationPortal {
-    margin-top: 20px;
-    flex: 0 0 auto;
-    overflow: visible;
-    padding-right: 4px;
-  }
+    .home-shell {
+      gap: 16px;
+    }
 
-  #locationPortal::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  #locationPortal::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  #locationPortal::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 3px;
-  }
-
-  #locationPortal::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
-
-  .spot-cards-container {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .spot-card.saved-location {
-    margin-top: 0;
-  }
-
-  .spot-card .coordinates {
-    font-family: 'SF Mono', 'Monaco', monospace;
-    font-size: 12px;
-  }
-
-  #category {
-    background: var(--card);
-    color: var(--ink);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    font-weight: 600;
-    padding: 10px;
-  }
-
-  .suggestion-panel {
-    margin-top: 22px;
-    border-top: 1px solid var(--line);
-    padding-top: 18px;
-  }
-
-  .suggestion-panel h2 {
-    font-size: 20px;
-    margin-bottom: 12px;
-  }
-
-  .suggestion-controls {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .suggestion-controls label {
-    display: block;
-    color: var(--ink-dim);
-    font-size: 12px;
-    margin-bottom: 6px;
-  }
-
-  .suggestion-controls select,
-  .suggestion-controls input {
-    width: 100%;
-    min-height: 42px;
-    background: var(--card);
-    color: var(--ink);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 10px;
-  }
-
-  .suggestion-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px;
-    align-items: center;
-  }
-
-  .suggestion-results {
-    margin-top: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .suggestion-score {
-    display: flex;
-    gap: 12px;
-    color: var(--ink-dim);
-    font-size: 13px;
-    margin-top: 8px;
-  }
-
-  .finder-vote {
-    display: none;
-    border: 1px solid var(--line);
-    background: var(--card);
-    border-radius: 14px;
-    padding: 12px;
-    margin-top: 12px;
-  }
-
-  .finder-vote p {
-    color: var(--ink-dim);
-    font-size: 13px;
-    margin-bottom: 10px;
-  }
-
-  .finder-vote .row {
-    display: flex;
-    gap: 10px;
-  }
-
-  .finder-vote .btn {
-    margin-top: 0;
-  }
-
-  @media (max-width: 720px) {
     .suggestion-controls,
     .suggestion-actions {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .spot-card .row {
-      flex-direction: column;
+    .hero-card,
+    .panel,
+    .spot-card,
+    .finder-panel {
+      border-radius: 32px;
     }
   }
 
-  option {
-    color: black;
-    border: solid black 0.5px;
-    background-color: white;
+  @media (prefers-reduced-motion: reduce) {
+    #pulse {
+      animation: none;
+    }
   }
-
-  .friend button{
-    color: black;
-    border: solid black 0.5px;
-    background-color: white;
-    padding: 5px;
-    font-weight: 600;
-    margin: 20px;
-    margin-left: 0;
-    border-radius: 7px;
-  }
-
-  .friend a{
-    text-decoration: none;
-    color: black;
-  }
-  .friend {
-    text-align: left;
-  }
-
-  .shared_location a{
-    text-decoration: none;
-    color: black;
-    
-  }
-
-  .shared_location button{
-    color: black;
-    border: solid black 0.5px;
-    background-color: white;
-    padding: 5px;
-    font-weight: 600;
-    margin: 20px;
-    margin-left: 0;
-    border-radius: 7px;
-  }
-  .shared_location {
-    text-align: left;
-    border: none;
-  }
-
-  .share-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 24px;
-    z-index: 1000;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-    max-width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-
-  .share-modal h3 {
-    font-size: 19px;
-    font-weight: 700;
-    margin-bottom: 16px;
-  }
-
-  .share-modal .friend-list {
-    list-style: none;
-    margin-bottom: 16px;
-  }
-
-  .share-modal .friend-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .share-modal .friend-list li:last-child {
-    border-bottom: none;
-  }
-
-  .share-modal .friend-list .btn {
-    margin-top: 0;
-    width: auto;
-    padding: 8px 16px;
-    font-size: 14px;
-  }
-
 </style>
 </head>
 <body>
 
-<!-- ============ HOME SCREEN ============ -->
 <div class="screen active" id="home">
-  <div>
-    <div class="auth" id="auth">
-      <button><a href="/auth/register">register</a></button> 
-      <button><a href="/auth/login">login</a></button> 
-    </div>
-    <div id="welcomeSection" style="display:none;">
-      <h2>Welcome back!</h2>
-      <p id="welcomMessage">You are signed in.</p>
-      <button onclick="logout()" type="button">Logout</button>
-    </div>
-    <div class="friend">
-      <button type="button"><a href='/friend'>Friends</a></button>
-    </div>
-    <div class="shared_location">
-      <button type="button"><a href='/location/share'>Locations shared by friends</a></button>
-    </div>
-    <div class="eyebrow">Waypoint</div>
-    <h1>Save a spot.<br>Find your way back.</h1>
-    <p class="lede">Mark where you are now — your parked bike, a campsite, a meeting point. Later, an arrow points you back to it.</p>
-  </div>
-
-  <div class="warn-banner" id="httpsWarn">
-    This page isn't on HTTPS, so the browser blocks GPS and compass access. Deploy it (Vercel, Netlify, GitHub Pages) or tunnel with ngrok, then open the https:// link.
-  </div>
-
-  <div class="field">
-    <label for="spotName">Spot name</label>
-    <input id="spotName" name="spotName" type="text" placeholder="e.g. Parked bike" maxlength="40" autocomplete="off" required>
-  </div>
-
-  <button class="btn" id="saveBtn" onclick="saveLocation()" type = "button">Save this spot</button>
-
-  <div class="spot-card" id="spotCard" style="display:none">
-    <div class="name" id="cardName"></div>
-    <div class="meta" id="cardMeta"></div>
-    <div class="row">
-      <button class="btn find" id="findBtn">Find</button>
-      <button class="btn ghost" id="deleteBtn">Delete</button>
-    </div>
-  </div>
-
-  <div class="status" id="homeStatus"></div>
-
-  <p class="footnote">
-    Works outdoors with a clear view of the sky — GPS is accurate to roughly 3–15 m, so the arrow guides you close, then you look around. Indoors it will drift. Compass works best away from metal and magnets.
-  </p>
-  <button id ="loadLocation" type="button" onclick="loadLocations()"> <span class="material-symbols-outlined">
-</span>Saved Location</button>
-  <div id="locationPortal">
-    Click the button above to see saved locations.
-  </div>
-
-  <div class="suggestion-panel">
-    <h2>Find a public destination</h2>
-    <div class="suggestion-controls">
-      <div>
-        <label for="suggestCategory">Category</label>
-        <select id="suggestCategory" name="suggestCategory">
-          <option value="all">Any public spot</option>
-          <option value="hidden_gem">Hidden gem</option>
-          <option value="local_secret">Only locals know</option>
-          <option value="attraction">Attraction</option>
-          <option value="food">Food</option>
-          <option value="drink">Drink</option>
-          <option value="entertain">Entertainment</option>
-          <option value="nature">Nature</option>
-          <option value="quiet">Quiet spot</option>
-          <option value="other">Other</option>
-        </select>
+  <div class="shell home-shell">
+    <section class="hero-card">
+      <div class="hero-copy">
+        <div class="eyebrow">Waypoint</div>
+        <h1>Discover with us.</h1>
+        <p class="lede">See where Waypoint would take you.</p>
       </div>
-      <div>
-        <label for="minDistance">Min distance (m)</label>
-        <input id="minDistance" name="minDistance" type="number" min="0" step="100" value="0">
-      </div>
-      <div>
-        <label for="maxDistance">Max distance (m)</label>
-        <input id="maxDistance" name="maxDistance" type="number" min="100" step="100" value="5000">
-      </div>
+    </section>
+
+    <div class="warn-banner" id="httpsWarn">
+      This page is not on HTTPS, so the browser blocks GPS and compass access. Open it through a secure URL when testing on mobile hardware.
     </div>
-    <div class="suggestion-actions">
-      <div class="status" id="suggestionStatus"></div>
-      <button class="btn find" type="button" onclick="suggestLocations()">Suggest</button>
-    </div>
-    <div class="suggestion-results" id="suggestionResults"></div>
-  </div>
-</div>
 
-
-
-<!-- ============ FINDER SCREEN ============ -->
-<div class="screen" id="finder">
-  <div class="head">
-    <div class="eyebrow">Finding</div>
-    <h1 id="findingName">spot</h1>
-  </div>
-
-  <div class="stage">
-    <div id="arrowWrap">
-      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M50 88 L50 24 M26 46 L50 22 L74 46"
-              stroke="#ffffff" stroke-width="13"
-              stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-      </svg>
-    </div>
-    <div id="pulse"></div>
-  </div>
-
-  <div class="readout">
-    <div class="dist" id="distText">— <span class="unit"></span></div>
-    <div class="dir" id="dirText">locating…</div>
-    <div class="fine" id="fineText"></div>
-    <div class="finder-vote" id="finderVotePanel">
-      <p id="finderVoteText">Worth the trip?</p>
+    <div class="spot-card" id="spotCard" style="display:none">
+      <div class="name" id="cardName"></div>
+      <div class="meta" id="cardMeta"></div>
       <div class="row">
-        <button class="btn find" type="button" onclick="voteCurrentDestination(1)">Upvote</button>
-        <button class="btn ghost" type="button" onclick="voteCurrentDestination(-1)">Downvote</button>
+        <button class="btn find" id="findBtn" type="button">Find</button>
+        <button class="btn ghost" id="deleteBtn" type="button">Delete</button>
       </div>
     </div>
-  </div>
 
-  <div class="controls">
-    <button class="round" id="closeBtn" aria-label="Stop finding">✕</button>
-    <button class="round" id="beepBtn" aria-label="Toggle sound">🔊</button>
+    <section class="panel suggestion-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Find new spots</h2>
+        </div>
+      </div>
+
+      <div class="suggestion-controls">
+        <div>
+          <label for="suggestCategory">Category</label>
+          <select id="suggestCategory" name="suggestCategory">
+            <option value="all">Any public spot</option>
+            <option value="hidden_gem">Hidden gem</option>
+            <option value="local_secret">Only locals know</option>
+            <option value="attraction">Attraction</option>
+            <option value="food">Food</option>
+            <option value="drink">Drink</option>
+            <option value="entertain">Entertainment</option>
+            <option value="nature">Nature</option>
+            <option value="quiet">Quiet spot</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="maxDistance">Max distance (km)</label>
+          <input id="maxDistance" name="maxDistance" type="number" min="0.1" step="0.1" value="5">
+        </div>
+      </div>
+
+      <div class="suggestion-actions">
+        <div class="status" id="suggestionStatus"></div>
+        <button class="btn find" type="button" onclick="suggestLocations()">Suggest</button>
+      </div>
+
+      <div class="suggestion-results" id="suggestionResults"></div>
+    </section>
+
+    <p class="footnote">GPS is best outdoors with a clear view of the sky. Once you are close, switch from compass-following to looking around the area.</p>
   </div>
 </div>
+
+<div class="save-sheet" id="saveSheet">
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <div class="eyebrow">Save</div>
+        <h2>Drop a new waypoint</h2>
+      </div>
+      <div class="panel-note">Save points and revisit your list without crowding the main screen.</div>
+    </div>
+
+    <div class="field-grid">
+      <div class="field">
+        <label for="spotName">Spot name</label>
+        <input id="spotName" name="spotName" type="text" placeholder="Parked bike, cafe, campsite..." maxlength="40" autocomplete="off" required>
+      </div>
+      <button class="btn spark" id="saveBtn" onclick="saveLocation()" type="button">Save this spot</button>
+      <div class="status" id="homeStatus"></div>
+    </div>
+
+    <div class="saved-header" style="margin-top: 16px;">
+      <div>
+        <div class="eyebrow">Collection</div>
+        <h2>Saved locations</h2>
+      </div>
+      <button id="loadLocation" class="btn ghost" type="button" onclick="loadLocations()">Refresh</button>
+    </div>
+    <div id="locationPortal">Tap refresh to load your saved spots.</div>
+  </section>
+</div>
+
+<div class="screen" id="finder">
+  <div class="shell finder-shell">
+    <div class="finder-floating-controls">
+      <button class="round" id="closeBtn" aria-label="Back to main screen">←</button>
+      <button class="round" id="beepBtn" aria-label="Toggle sound">🔊</button>
+    </div>
+
+    <div class="finder-top">
+      <div>
+        <div class="eyebrow">Compass Mode</div>
+        <div class="finder-name" id="findingName">spot</div>
+        <div class="finder-subtitle">Minimal readout for quick mobile navigation.</div>
+      </div>
+      <div class="finder-badge">Live</div>
+    </div>
+
+    <section class="finder-panel">
+      <div class="readout">
+        <div class="dist" id="distText">— <span class="unit"></span></div>
+        <div class="dir" id="dirText">locating…</div>
+        <div class="fine" id="fineText"></div>
+      </div>
+
+      <div class="stage">
+        <div class="compass-ring">
+          <div id="arrowWrap">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#59d7ff"/>
+                  <stop offset="55%" stop-color="#ff5eb2"/>
+                  <stop offset="100%" stop-color="#ffd84f"/>
+                </linearGradient>
+              </defs>
+              <path d="M50 85 L50 18 M24 43 L50 15 L76 43"
+                    stroke="url(#arrowGradient)" stroke-width="14"
+                    stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </div>
+          <div id="pulse"></div>
+        </div>
+      </div>
+
+      <div class="finder-vote" id="finderVotePanel">
+        <p id="finderVoteText">Worth the trip?</p>
+        <div class="row">
+          <button class="btn find" type="button" onclick="voteCurrentDestination(1)">Upvote</button>
+          <button class="btn ghost" type="button" onclick="voteCurrentDestination(-1)">Downvote</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<nav class="bottom-tabs" aria-label="Primary">
+  <div class="tab-bar">
+    <a class="tab-item active" href="/">
+      <span class="tab-icon">🧭</span>
+      <span>Compass</span>
+    </a>
+    <a class="tab-item" href="/drops">
+      <span class="tab-icon">📍</span>
+      <span>Drops</span>
+    </a>
+    <a class="tab-item" href="/friend">
+      <span class="tab-icon">👥</span>
+      <span>Social</span>
+    </a>
+    <a class="tab-item" href="/account">
+      <span class="tab-icon">⚙️</span>
+      <span>Account</span>
+    </a>
+  </div>
+</nav>
+
+<button class="fab" id="saveFab" type="button" aria-label="Add new waypoint">+</button>
 
 <script type="module" src="/index.js"></script>
 <script>
-async function checkSession() {
-  const token = localStorage.getItem("access-token");
-  if (!token) {
-    console.log("No token found");
-    document.getElementById("auth").style.display = "block";
-    document.getElementById("welcomeSection").style.display = "none";
-    return false;
-  }
-
-  try {
-    const response = await fetch("/auth/username", {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
-
-    if (response.ok) {
-      const result = await response.json(); // parse JSON
-      console.log("Session is alive:", result);
-
-      document.getElementById("auth").style.display = "none";
-      document.getElementById("welcomeSection").style.display = "block";
-
-      if (result.username) {
-        document.getElementById("welcomMessage").innerText = `Hello, ${result.username}`;
-      }
-      return true;
-    } else {
-      console.log("Session expired");
-      localStorage.removeItem("access-token");
-      document.getElementById("auth").style.display = "block";
-      document.getElementById("welcomeSection").style.display = "none";
-      return false;
-    }
-  } catch (err) {
-    console.error("Error checking session:", err);
-    return false;
-  }
-}
-
-// Run session check when page loads
-window.addEventListener("DOMContentLoaded", () => {
-  checkSession();
-});
-
 (() => {
   "use strict";
 
   const $ = id => document.getElementById(id);
 
-  /* ---------- storage: localStorage with in-memory fallback ---------- */
   const store = {
     mem: {},
     get(k) { try { return localStorage.getItem(k); } catch (e) { return this.mem[k] ?? null; } },
@@ -650,15 +1120,14 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   const KEY = "waypoint.spot";
 
-  /* ---------- state ---------- */
-  let spot = null;            // { name, lat, lng, accuracy, ts }
-  let me = null;              // { lat, lng, accuracy }
-  let heading = null;         // degrees, 0 = north, clockwise
+  let spot = null;
+  let me = null;
+  let heading = null;
   let haveCompass = false;
   let watchId = null;
   let saveWatchId = null;
   let rafId = null;
-  let shownAngle = 0;         // smoothed arrow rotation actually rendered
+  let shownAngle = 0;
   let arrived = false;
   let beepOn = false;
   let beepTimer = null;
@@ -666,7 +1135,6 @@ window.addEventListener("DOMContentLoaded", () => {
   let wakeLock = null;
   let lastDistance = null;
 
-  /* ---------- geo math ---------- */
   const R = 6371000;
   const toRad = d => d * Math.PI / 180;
 
@@ -685,7 +1153,6 @@ window.addEventListener("DOMContentLoaded", () => {
     return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
   }
 
-  /* ---------- home screen ---------- */
   function setHomeStatus(msg, isError) {
     const el = $("homeStatus");
     el.textContent = msg || "";
@@ -709,7 +1176,6 @@ window.addEventListener("DOMContentLoaded", () => {
     renderSpotCard();
   }
 
-  /* Save: watch for up to 6 s, keep the most accurate fix */
   $("saveBtn").addEventListener("click", () => {
     if (!("geolocation" in navigator)) {
       setHomeStatus("This browser has no geolocation support.", true);
@@ -718,7 +1184,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const btn = $("saveBtn");
     btn.disabled = true;
     btn.textContent = "Getting GPS fix…";
-    setHomeStatus("Hold still for a few seconds — collecting the most accurate fix.");
+    setHomeStatus("Hold still for a few seconds while we collect your best fix.");
 
     let best = null;
     let saveDone = false;
@@ -735,9 +1201,7 @@ window.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => finishSave(best, null), 6000);
 
     function finishSave(best, err) {
-      if (saveDone) {
-        return;
-      };
+      if (saveDone) return;
       saveDone = true;
       if (saveWatchId !== null) {
         navigator.geolocation.clearWatch(saveWatchId);
@@ -768,7 +1232,7 @@ window.addEventListener("DOMContentLoaded", () => {
       };
       store.set(KEY, JSON.stringify(spot));
       renderSpotCard();
-      setHomeStatus(`Saved “${name}” with a ±${Math.round(best.coords.accuracy)} m fix.`);
+      setHomeStatus(`Saved "${name}" with a ±${Math.round(best.coords.accuracy)} m fix.`);
     }
   });
 
@@ -779,23 +1243,21 @@ window.addEventListener("DOMContentLoaded", () => {
     setHomeStatus("Spot deleted.");
   });
 
-  /* ---------- compass ---------- */
-  let compassTier = 0; // 0 = none, 1 = relative alpha, 2 = true compass
+  let compassTier = 0;
   function onOrient(e) {
     if (typeof e.webkitCompassHeading === "number" && !isNaN(e.webkitCompassHeading)) {
-      heading = e.webkitCompassHeading;           // iOS: already true compass heading
+      heading = e.webkitCompassHeading;
       compassTier = 2; haveCompass = true;
     } else if (e.absolute === true && typeof e.alpha === "number") {
-      heading = (360 - e.alpha) % 360;            // Android absolute orientation
+      heading = (360 - e.alpha) % 360;
       compassTier = 2; haveCompass = true;
     } else if (typeof e.alpha === "number" && compassTier <= 1) {
-      heading = (360 - e.alpha) % 360;            // last resort: relative alpha
+      heading = (360 - e.alpha) % 360;
       compassTier = 1; haveCompass = true;
     }
   }
 
   async function startCompass() {
-    // iOS 13+ requires an explicit permission request from a user gesture
     if (typeof DeviceOrientationEvent !== "undefined" &&
         typeof DeviceOrientationEvent.requestPermission === "function") {
       try {
@@ -816,20 +1278,20 @@ window.addEventListener("DOMContentLoaded", () => {
     compassTier = 0;
   }
 
-  /* ---------- start finder (for both home spot and saved locations) ---------- */
   async function startFinder(targetSpot) {
     if (!targetSpot) return;
-    
-    spot = targetSpot; // use the target location
+
+    spot = targetSpot;
     arrived = false;
     lastDistance = null;
     me = null;
+    const showVotes = !!targetSpot.id && !!targetSpot.is_public;
 
     $("findingName").textContent = spot.name;
     $("distText").innerHTML = "— <span class='unit'></span>";
     $("dirText").textContent = "locating…";
     $("fineText").textContent = "";
-    $("finderVotePanel").style.display = "none";
+    $("finderVotePanel").style.display = showVotes ? "block" : "none";
     $("finderVotePanel").dataset.locationId = targetSpot.id || "";
     $("finderVoteText").textContent = "Worth the trip?";
     $("pulse").style.display = "none";
@@ -848,48 +1310,43 @@ window.addEventListener("DOMContentLoaded", () => {
       err => {
         $("dirText").textContent = "GPS error";
         $("fineText").textContent = err.code === 1
-          ? "Location permission denied — allow it in browser settings."
+          ? "Location permission denied. Allow it in browser settings."
           : "No GPS signal. Move to open sky.";
       },
       { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 }
     );
 
-    // warn if no compass events arrive
     setTimeout(() => {
       if (!haveCompass && !arrived) {
         $("fineText").textContent = compassOk
-          ? "No compass data — arrow shows direction relative to north (N = up)."
-          : "Compass permission denied — arrow shows direction relative to north (N = up).";
+          ? "No compass data. Arrow shows north-up guidance."
+          : "Compass permission denied. Arrow shows north-up guidance.";
       }
     }, 3000);
 
-    try { wakeLock = await navigator.wakeLock?.request("screen"); } catch (e) { /* optional */ }
+    try { wakeLock = await navigator.wakeLock?.request("screen"); } catch (e) {}
 
     showScreen("finder");
     loop();
   }
 
-  // Export for use from index.js
   window.startFinderForLocation = startFinder;
 
-  // Check for pending target spot (from navigation from shared_locations.html)
   window.addEventListener("load", () => {
     try {
-      const pendingSpotJson = sessionStorage.getItem('pendingTargetSpot');
+      const pendingSpotJson = sessionStorage.getItem("pendingTargetSpot");
       if (pendingSpotJson) {
         const targetSpot = JSON.parse(pendingSpotJson);
-        sessionStorage.removeItem('pendingTargetSpot');
-        // Give the page a moment to fully initialize before starting finder
+        sessionStorage.removeItem("pendingTargetSpot");
         setTimeout(() => {
           startFinder(targetSpot);
         }, 100);
       }
     } catch (e) {
-      console.error('Error loading pending target spot:', e);
+      console.error("Error loading pending target spot:", e);
     }
   });
 
-  /* ---------- finder button handler ---------- */
   $("findBtn").addEventListener("click", () => {
     if (!spot) return;
     startFinder(spot);
@@ -898,7 +1355,12 @@ window.addEventListener("DOMContentLoaded", () => {
   function showScreen(id) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
     $(id).classList.add("active");
+    document.body.classList.toggle("finder-active", id === "finder");
   }
+
+  $("saveFab").addEventListener("click", () => {
+    $("saveSheet").classList.toggle("open");
+  });
 
   function fmtDistance(m) {
     if (m >= 1000) return [(m / 1000).toFixed(2), "km"];
@@ -907,11 +1369,10 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   function dirWord(rel) {
-    // rel = clockwise angle from "straight ahead" to the target
-    if (rel >= 330 || rel < 30) return "ahead";
-    if (rel >= 30 && rel < 150) return "to your <b>right</b>";
+    if (rel >= 330 || rel < 30) return "straight <b>ahead</b>";
+    if (rel >= 30 && rel < 150) return "drift to your <b>right</b>";
     if (rel >= 150 && rel < 210) return "<b>behind</b> you";
-    return "to your <b>left</b>";
+    return "drift to your <b>left</b>";
   }
 
   function loop() {
@@ -923,32 +1384,31 @@ window.addEventListener("DOMContentLoaded", () => {
     const brg = bearingDeg(me, spot);
     const arriveRadius = Math.max(12, me.accuracy);
 
-    /* arrived state */
     if (dist <= arriveRadius && !arrived) {
       arrived = true;
       $("arrowWrap").style.display = "none";
       $("pulse").style.display = "block";
-      $("dirText").innerHTML = "<b>You’re here</b> — look around";
-      if (spot.id) {
-        $("finderVotePanel").style.display = "block";
+      $("dirText").innerHTML = "<b>You are here</b>";
+      if (showVotes) {
+        $("finderVoteText").textContent = "You made it. Worth the trip?";
       }
       if (navigator.vibrate) navigator.vibrate([120, 80, 120]);
     } else if (dist > arriveRadius * 1.6 && arrived) {
-      arrived = false;  // walked away again
+      arrived = false;
       $("pulse").style.display = "none";
       $("arrowWrap").style.display = "block";
-      $("finderVotePanel").style.display = "none";
+      if (showVotes) {
+        $("finderVoteText").textContent = "Worth the trip?";
+      }
     }
 
-    /* distance readout */
     const [val, unit] = fmtDistance(dist);
     $("distText").innerHTML = `${val} <span class="unit">${unit}</span>`;
     $("fineText").textContent =
-      `GPS ±${Math.round(me.accuracy)} m` + (haveCompass ? "" : " · compass unavailable");
+      `GPS ±${Math.round(me.accuracy)} m${haveCompass ? "" : " · compass unavailable"}`;
 
     if (arrived) return;
 
-    /* arrow rotation, eased along the shortest path */
     const h = haveCompass && heading !== null ? heading : 0;
     const target = (brg - h + 360) % 360;
     const diff = ((target - shownAngle + 540) % 360) - 180;
@@ -958,7 +1418,6 @@ window.addEventListener("DOMContentLoaded", () => {
     $("dirText").innerHTML = dirWord(target);
   }
 
-  /* ---------- proximity beep ---------- */
   function beepLoop() {
     if (!beepOn) return;
     if (audioCtx && lastDistance !== null) {
@@ -971,7 +1430,6 @@ window.addEventListener("DOMContentLoaded", () => {
       o.start();
       o.stop(audioCtx.currentTime + 0.13);
     }
-    // closer = faster: 2.5 s at 200 m+, down to 0.25 s when arrived
     const d = lastDistance ?? 200;
     const interval = arrived ? 250 : Math.min(2500, Math.max(350, d * 12));
     beepTimer = setTimeout(beepLoop, interval);
@@ -992,7 +1450,6 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  /* ---------- stop finding ---------- */
   $("closeBtn").addEventListener("click", () => {
     if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
     if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
@@ -1005,7 +1462,6 @@ window.addEventListener("DOMContentLoaded", () => {
     showScreen("home");
   });
 
-  /* ---------- boot ---------- */
   if (!window.isSecureContext) $("httpsWarn").style.display = "block";
   loadSpot();
 })();

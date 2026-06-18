@@ -51,6 +51,17 @@ function getLocationCoords(loc) {
   return { lat, lng };
 }
 
+function closeOpenCardMenus(exceptMenu) {
+  document.querySelectorAll('.card-menu.open').forEach((menu) => {
+    if (menu !== exceptMenu) {
+      menu.classList.remove('open');
+      menu.closest('.spot-card')?.classList.remove('menu-open');
+      menu.closest('.panel')?.classList.remove('menu-open');
+      menu.querySelector('.card-menu-trigger')?.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
 function getCurrentPosition() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -110,9 +121,28 @@ async function loadLocations() {
       const dateStr = new Date(loc.created_at).toLocaleString() || "Date unknown";
       const coords = getLocationCoords(loc);
       const categoryId = `category-${loc.id}`;
+      const menuId = `menu-${loc.id}`;
 
       card.innerHTML = `
-      <div class="name">${loc.name}</div>
+      <div class="spot-card-head">
+        <div class="name">${loc.name}</div>
+        <div class="card-menu" id="${menuId}">
+          <button class="card-menu-trigger" type="button" aria-label="More actions" aria-expanded="false">
+            <span>&#8942;</span>
+          </button>
+          <div class="card-menu-panel">
+            <button class="menu-action toggle-privacy" type="button">
+              ${loc.is_public ? "Make Private" : "Make Public"}
+            </button>
+            <button class="menu-action share" type="button">Share</button>
+            <label class="menu-label" for="${categoryId}">Saved location category</label>
+            <select class="location-category" id="${categoryId}" name="category-${loc.id}">
+              ${categoryOptions(loc.category)}
+            </select>
+            <button class="menu-action danger delete-location" type="button">Delete</button>
+          </div>
+        </div>
+      </div>
       <div class="meta">
         <div>Saved ${dateStr}</div>
         <div class="coordinates">${formatCoordinate(loc.lat)}, ${formatCoordinate(loc.lng)}</div>
@@ -121,23 +151,40 @@ async function loadLocations() {
       </div>
       <div class="row">
         <button class="btn find" type="button" ${coords ? '' : 'disabled'}>Find</button>
-        <button class="btn ghost delete-location" type="button">Delete</button>
-        <button class="btn ghost toggle-privacy" type="button">
-          ${loc.is_public ? "Make Private" : "Make Public"}
-        </button>
-        <label class="sr-only" for="${categoryId}">Saved location category</label>
-        <select class="location-category" id="${categoryId}" name="category-${loc.id}">
-          ${categoryOptions(loc.category)}
-        </select>
-        <button class="btn share" type="button">
-        <span class="icon">🔗</span> Share
-        </button>
-
       </div>
       `;
 
+      const cardMenu = card.querySelector('.card-menu');
+      const menuTrigger = card.querySelector('.card-menu-trigger');
+      menuTrigger?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const willOpen = !cardMenu.classList.contains('open');
+        closeOpenCardMenus(cardMenu);
+        cardMenu.classList.toggle('open', willOpen);
+        card.classList.toggle('menu-open', willOpen);
+        card.closest('.panel')?.classList.toggle('menu-open', willOpen);
+        menuTrigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      });
+
+      cardMenu?.querySelectorAll('.menu-action, .location-category').forEach((element) => {
+        element.addEventListener('click', () => {
+          if (element.classList.contains('location-category')) return;
+          cardMenu.classList.remove('open');
+          card.classList.remove('menu-open');
+          card.closest('.panel')?.classList.remove('menu-open');
+          menuTrigger?.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+      cardMenu?.querySelector('.location-category')?.addEventListener('change', () => {
+        cardMenu.classList.remove('open');
+        card.classList.remove('menu-open');
+        card.closest('.panel')?.classList.remove('menu-open');
+        menuTrigger?.setAttribute('aria-expanded', 'false');
+      });
+
       card.querySelector('.find').addEventListener('click', () => {
-        if (coords) findLocation(coords.lat, coords.lng, loc.name);
+        if (coords) findLocation(coords.lat, coords.lng, loc.name, loc.id, !!loc.is_public);
       });
       card.querySelector('.delete-location').addEventListener('click', () => deleteLocation(loc.id));
       card.querySelector('.toggle-privacy').addEventListener('click', () => togglePrivacy(loc.id, loc.is_public));
@@ -156,6 +203,15 @@ async function loadLocations() {
     container.innerHTML = `<p style="color: var(--danger); font-size: 14px;">${err.message || 'Failed to load saved locations'}</p>`
   }
 }
+
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.card-menu')) {
+    closeOpenCardMenus();
+    document.querySelectorAll('.card-menu-trigger[aria-expanded="true"]').forEach((button) => {
+      button.setAttribute('aria-expanded', 'false');
+    });
+  }
+});
 
 async function openShareMenu(locationId) {
   const token = localStorage.getItem("access-token");
@@ -334,7 +390,7 @@ function renderSuggestions(locations) {
     `;
 
     card.querySelector('button').addEventListener('click', () => {
-      findLocation(loc.lat, loc.lng, loc.name, loc.id);
+      findLocation(loc.lat, loc.lng, loc.name, loc.id, true);
     });
 
     container.appendChild(card);
@@ -343,11 +399,11 @@ function renderSuggestions(locations) {
 
 async function suggestLocations() {
   const category = document.querySelector('#suggestCategory')?.value || 'all';
-  const minDistance = Number(document.querySelector('#minDistance')?.value || 0);
-  const maxDistance = Number(document.querySelector('#maxDistance')?.value || 5000);
+  const maxDistanceKm = Number(document.querySelector('#maxDistance')?.value || 5);
+  const maxDistance = Math.round(maxDistanceKm * 1000);
 
-  if (!Number.isFinite(minDistance) || !Number.isFinite(maxDistance) || maxDistance < minDistance) {
-    setSuggestionStatus('Enter a valid distance range.', true);
+  if (!Number.isFinite(maxDistanceKm) || maxDistanceKm < 0) {
+    setSuggestionStatus('Enter a valid maximum distance.', true);
     return;
   }
 
@@ -360,7 +416,6 @@ async function suggestLocations() {
     const params = new URLSearchParams({
       lat: position.coords.latitude,
       lng: position.coords.longitude,
-      minDistance,
       maxDistance,
       category
     });
@@ -425,10 +480,11 @@ async function voteCurrentDestination(vote) {
   }
 }
 
-function findLocation(lat, lng, name, id = null) {
+function findLocation(lat, lng, name, id = null, isPublic = false) {
   // Set the spot globally for the finder screen to use
   const targetSpot = {
     id,
+    is_public: !!isPublic,
     name: name || 'Saved location',
     lat: parseFloat(lat),
     lng: parseFloat(lng),
@@ -579,7 +635,7 @@ async function login() {
       localStorage.setItem("access-token", result.session.access_token);
       window.location.href = "/";
     } else {
-      alert(result.error || "Login failed");
+      alert(result.error || result.message || "Login failed");
     }
   } catch (err) {
     console.error(err);
@@ -591,21 +647,33 @@ async function register() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  const response = await fetch("/auth/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
-  });
+  try {
+    const response = await fetch("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
 
-  
-  const result = await response.json();
-  console.log(result);
+    const result = await response.json();
+    console.log(result);
 
-  if (response.ok && result.data && result.data.session && result.data.session.access_token) {
-    localStorage.setItem("access-token", result.data.session.access_token);
-    window.location.href = "/";
-  } else {
-    alert("Registration failed or no session returned");
+    if (!response.ok) {
+      alert(result.error || result.message || "Registration failed");
+      return;
+    }
+
+    const accessToken = result.data?.session?.access_token;
+    if (accessToken) {
+      localStorage.setItem("access-token", accessToken);
+      window.location.href = "/";
+      return;
+    }
+
+    alert(result.message || "Registration successful. Check your email to confirm your account.");
+    window.location.href = "/auth/login";
+  } catch (err) {
+    console.error(err);
+    alert("Registration failed");
   }
 }
 

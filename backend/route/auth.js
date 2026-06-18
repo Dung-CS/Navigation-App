@@ -62,22 +62,36 @@ router.post('/register', async (req, res) => {
     });
 
     if (error) {
-        return res.status(401).json(error);
-    };
-    
-    const userId = data.user.id;
+        return res.status(400).json({ error: error.message });
+    }
 
-    await supabase
+    if (!data?.user?.id) {
+        return res.status(400).json({ error: "Registration did not return a user." });
+    }
+
+    const userId = data.user.id;
+    const { error: profileError } = await supabase
         .from('profiles')
-        .insert([
+        .upsert([
             {
                 id: userId,
                 username: email.split('@')[0]
             }
-        ]);
+        ], {
+            onConflict: 'id'
+        });
+
+    if (profileError) {
+        return res.status(400).json({ error: profileError.message });
+    }
+
+    const requiresConfirmation = !data.session;
 
     res.status(201).json({
-        message: 'User registered successfully',
+        message: requiresConfirmation
+          ? 'User registered. Check your email to confirm your account.'
+          : 'User registered successfully',
+        requiresConfirmation,
         data
     });
 });
@@ -87,8 +101,8 @@ router.post('/login', async (req, res) => {
 
     const {data, error} = await supabase.auth.signInWithPassword({email, password});
     if(error) {
-        return res.status(404).json(error);
-    };
+        return res.status(400).json({ error: error.message });
+    }
 
     res.json(data);
 });

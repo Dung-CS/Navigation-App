@@ -67,7 +67,7 @@ async function getVoteTotals(locationIds) {
 }
 
 router.get('/share', (req, res) => {
-    res.render('shared_locations');
+    res.redirect('/friend');
 })
 
 router.get('/share/:id', async(req,res) => {
@@ -75,14 +75,33 @@ router.get('/share/:id', async(req,res) => {
   try {
     const { data, error: fetchError } = await supabase
       .from('location_shares')
-      .select('location_id, locations(id, name, lat, lng, profile_id, created_at, category, is_public)')
+      .select('location_id, shared_by, locations(id, name, lat, lng, profile_id, created_at, category, is_public)')
       .eq('shared_with', userId);
 
     if (fetchError) return res.status(400).json({ error: fetchError.message });
 
+    const sharedByIds = [...new Set((data || []).map((share) => share.shared_by).filter(Boolean))];
+    let usernamesById = {};
+
+    if (sharedByIds.length) {
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', sharedByIds);
+
+      if (profileError) return res.status(400).json({ error: profileError.message });
+
+      usernamesById = (profiles || []).reduce((acc, profile) => {
+        acc[profile.id] = profile.username;
+        return acc;
+      }, {});
+    }
+
     const sharedLocations = data.map(share => ({
       ...share.locations,
-      share_id: share.location_id
+      share_id: share.location_id,
+      shared_by: share.shared_by,
+      shared_by_username: usernamesById[share.shared_by] || null
     }));
 
     return res.json(sharedLocations);

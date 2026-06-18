@@ -27,3 +27,57 @@ create table if not exists location_votes (
   updated_at timestamp default now(),
   unique(location_id, profile_id)
 );
+
+alter table location_votes enable row level security;
+
+drop policy if exists "location_votes_select_public" on location_votes;
+create policy "location_votes_select_public"
+on location_votes
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from locations
+    where locations.id = location_votes.location_id
+      and locations.is_public = true
+  )
+);
+
+drop policy if exists "location_votes_insert_own_public" on location_votes;
+create policy "location_votes_insert_own_public"
+on location_votes
+for insert
+to authenticated
+with check (
+  auth.uid() = profile_id
+  and exists (
+    select 1
+    from locations
+    where locations.id = location_votes.location_id
+      and locations.is_public = true
+  )
+);
+
+drop policy if exists "location_votes_update_own_public" on location_votes;
+create policy "location_votes_update_own_public"
+on location_votes
+for update
+to authenticated
+using (auth.uid() = profile_id)
+with check (
+  auth.uid() = profile_id
+  and exists (
+    select 1
+    from locations
+    where locations.id = location_votes.location_id
+      and locations.is_public = true
+  )
+);
+
+drop policy if exists "location_votes_delete_own" on location_votes;
+create policy "location_votes_delete_own"
+on location_votes
+for delete
+to authenticated
+using (auth.uid() = profile_id);
