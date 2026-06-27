@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waypoint</title>
+<style>
+  :root {
+    color: #4a2f67;
+    background: #fff6cb;
+    font-family: "Avenir Next Rounded", "Trebuchet MS", "Gill Sans", sans-serif;
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.78), transparent 22%),
+      radial-gradient(circle at 82% 16%, rgba(255, 255, 255, 0.62), transparent 18%),
+      linear-gradient(180deg, #fff6cb 0%, #ffd3ea 44%, #b6f2ff 100%);
+  }
+
+  .loader {
+    width: min(88vw, 360px);
+    padding: 24px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 18px 50px rgba(175, 106, 180, 0.16);
+    text-align: center;
+  }
+
+  .loader h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+  }
+
+  .loader p {
+    margin: 0;
+    color: rgba(74, 47, 103, 0.72);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <main class="loader">
+    <h1>Waypoint</h1>
+    <p>Loading the project...</p>
+  </main>
+
+  <script>
+    (async () => {
+      try {
+        const pages = {
+          account: 'account.ejs',
+          drops: 'drops.ejs',
+          friend: 'friend.ejs',
+          home: 'index.ejs',
+          login: 'login.ejs',
+          register: 'register.ejs',
+          shared: 'shared_locations.ejs'
+        };
+        const params = new URLSearchParams(window.location.search);
+        const page = params.get('page') || 'home';
+        const template = pages[page] || pages.home;
+        const templateUrl = new URL(`./frontend/${template}`, window.location.href);
+        const response = await fetch(templateUrl);
+
+        if (!response.ok) {
+          throw new Error(`Template request failed with ${response.status}`);
+        }
+
+        let html = await response.text();
+        html = html
+          .replaceAll('src="/index.js"', 'src="./frontend/index.js"')
+          .replaceAll('href="/"', 'href="./"')
+          .replaceAll('href="/drops"', 'href="./?page=drops"')
+          .replaceAll('href="/friend"', 'href="./?page=friend"')
+          .replaceAll('href="/account"', 'href="./?page=account"')
+          .replaceAll('href="/auth/login"', 'href="./?page=login"')
+          .replaceAll('href="/auth/register"', 'href="./?page=register"')
+          .replaceAll('href="/location/share"', 'href="./?page=shared"');
+
+        document.open();
+        document.write(html);
+        document.close();
+      } catch (error) {
+        console.error(error);
+        document.querySelector('.loader p').textContent =
+          'The project could not be loaded from the static GitHub Pages files.';
+      }
+    })();
+  </script>
+</body>
+</html>
